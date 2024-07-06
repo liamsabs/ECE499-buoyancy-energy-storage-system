@@ -52,6 +52,7 @@
 #include "diagnostics.h"
 #include "measure.h"
 #include "timer.h"
+#include "spi1.h"
 
 
 volatile UGF_T uGF;
