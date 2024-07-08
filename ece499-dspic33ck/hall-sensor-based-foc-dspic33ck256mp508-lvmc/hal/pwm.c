@@ -108,6 +108,8 @@ void InitPWMGenerators(void)
     MPHASE       = 0x0000;
     /* Initialize Master Duty Cycle */
     MDC          = 0x0000;
+    
+    //This sets the period of everything
     /* Initialize Master Period Register */
     MPER         = LOOPTIME_TCY;
     
@@ -491,14 +493,19 @@ void InitPWMGenerator1 (void)
     /* ADC Trigger 1 Source is PG1TRIGB Compare Event Enable bit
        0 = PG1TRIGB register compare event is disabled as trigger source for 
            ADC Trigger 1 */
-    PG1EVTLbits.ADTR1EN2 = 0;    
+    PG1EVTLbits.ADTR1EN2 = 0; 
+    
+    
     /* ADC Trigger 1 Source is PG1TRIGA Compare Event Enable bit
        1 = PG1TRIGA register compare event is enabled as trigger source for 
            ADC Trigger 1 */
+    //THIS IS WHAT TRIGGERS THE ADC
     PG1EVTLbits.ADTR1EN1 = 1;
     /* Update Trigger Select bits
        01 = A write of the PG1DC register automatically sets the UPDATE bit*/
     PG1EVTLbits.UPDTRG = 1;
+    
+    
     /* PWM Generator Trigger Output Selection bits
        000 = EOC event is the PWM Generator trigger*/
     PG1EVTLbits.PGTRGSEL = 0;

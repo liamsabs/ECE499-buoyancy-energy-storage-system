@@ -1,0 +1,11 @@
+For regen braking
+
+Set this to 0 because we don't want this to just be a diode for all PWMS
+    /* PWM1H Output Port Enable bit
+       1 = PWM Generator controls the PWM1H output pin
+       0 = PWM Generator does not control the PWM1H output pin */
+    PG1IOCONHbits.PENH = 1;
+
+Then just set the pin to 1
+
+PWM frequency determines ADC sample rate since PWM 1 triggers ADC conversion. When conversion finishes the interrupt takes place.

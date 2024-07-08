@@ -93,7 +93,7 @@ void MCAPP_MeasureCurrentInit(MCAPP_MEASURE_T *pMotorInputs)
 * @return none.
 * @example
 * <CODE> MCAPP_MeasureCurrentOffset(&current); </CODE>
-*
+*Sam note, offset is introduced to account for offsets that are created by the hardware (the adc)
 */
 void MCAPP_MeasureCurrentOffset(MCAPP_MEASURE_T *pMotorInputs)
 {
