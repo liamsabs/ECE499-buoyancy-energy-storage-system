@@ -42,19 +42,22 @@
 #include "cmp.h"
 #include "timer.h"
 
-BUTTON_T buttonStartStop;
-BUTTON_T buttonSpeedHalfDouble;
+BUTTON_T button1;
+BUTTON_T button2;
+BUTTON_T button3;
 
 uint16_t boardServiceISRCounter = 0;
 
 void DisablePWMOutputsInverterA(void);
-void EnablePWMOutputsInverterA(void);
+void EnablePWMOutputsInverterAMotor(void);
+void EnablePWMOutputsInverterAGenerator(void);
 void ClearPWMPCIFaultInverterA(void);
 void BoardServiceInit(void);
 void BoardServiceStepIsr(void);
 void BoardService(void);
 bool IsPressed_Button1(void);
 bool IsPressed_Button2(void);
+bool IsPressed_Button3(void);
 void PWMDutyCycleSetDualEdge(MC_DUTYCYCLEOUT_T *,MC_DUTYCYCLEOUT_T *);
 void PWMDutyCycleSet(MC_DUTYCYCLEOUT_T *);
 void pwmDutyCycleLimitCheck(MC_DUTYCYCLEOUT_T *,uint16_t,uint16_t);
@@ -64,9 +67,9 @@ static void ButtonScan(BUTTON_T * ,bool);
 
 bool IsPressed_Button1(void)
 {
-    if (buttonStartStop.status)
+    if (button1.status)
     {
-        buttonStartStop.status = false;
+        button1.status = false;
         return true;
     }
     else
@@ -77,15 +80,29 @@ bool IsPressed_Button1(void)
 
 bool IsPressed_Button2(void)
 {
-    if (buttonSpeedHalfDouble.status)
+    if (button2.status)
     {
-        buttonSpeedHalfDouble.status = false;
+        button2.status = false;
         return true;
     }
     else
     {
         return false;
     }
+}
+
+bool IsPressed_Button3(void)
+{
+    if (button3.status)
+    {
+        button3.status = false;
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+    
 }
 
 void BoardServiceStepIsr(void)
@@ -99,13 +116,16 @@ void BoardService(void)
 {
     if (boardServiceISRCounter ==  BOARD_SERVICE_TICK_COUNT)
     {
-        /* Button scanning loop for Button 1 to start Motor A */
-        ButtonScan(&buttonStartStop,BUTTON_START_STOP);
+        /* Button scanning loop for Button 1*/
+        ButtonScan(&button1,SW1);
 
-        /* Button scanning loop for SW2 to enter into filed
-            weakening mode */
-        ButtonScan(&buttonSpeedHalfDouble,BUTTON_SPEED_HALF_DOUBLE);
-
+        /* Button scanning loop for SW2*/
+        ButtonScan(&button2,SW2);
+        
+        /* Button scanning loop for SW3*/
+        ButtonScan(&button3,SW3);
+        
+        
         boardServiceISRCounter = 0;
     }
 }
@@ -117,6 +137,7 @@ void BoardServiceInit(void)
 
 void ButtonScan(BUTTON_T *pButton,bool button) 
 {
+   // pButton->status=false;
     if (button == true) 
     {
         if (pButton->debounceCount < BUTTON_DEBOUNCE_COUNT) 
@@ -141,13 +162,17 @@ void ButtonScan(BUTTON_T *pButton,bool button)
 }
 void ButtonGroupInitialize(void)
 {
-    buttonStartStop.state = BUTTON_NOT_PRESSED;
-    buttonStartStop.debounceCount = 0;
-    buttonStartStop.state = false;
+    button1.state = BUTTON_NOT_PRESSED;
+    button1.debounceCount = 0;
+    button1.state = false;
 
-    buttonSpeedHalfDouble.state = BUTTON_NOT_PRESSED;
-    buttonSpeedHalfDouble.debounceCount = 0;
-    buttonSpeedHalfDouble.state = false;
+    button2.state = BUTTON_NOT_PRESSED;
+    button2.debounceCount = 0;
+    button2.state = false;
+    
+    button3.state = BUTTON_NOT_PRESSED;
+    button3.debounceCount = 0;
+    button3.state = false;
 
 }
 
@@ -202,7 +227,7 @@ void InitPeripherals(void)
 }
 /**
  * Disable the PWM channels assigned for Inverter #A by overriding them to low state.
- * @example
+ * @exampleS
  * <code>
  * DisablePWMOutputsInverterA();
  * </code>
@@ -237,10 +262,10 @@ void DisablePWMOutputsInverterA(void)
  * Enable the PWM channels assigned for Inverter #A by removing Override.
  * @example
  * <code>
- * EnablePWMOutputsInverterA();
+ * EnablePWMOutputsInverterAMotor();
  * </code>
  */
-void EnablePWMOutputsInverterA(void)
+void EnablePWMOutputsInverterAMotor(void)
 {    
     // 0 = PWM Generator provides data for the PWM4H pin
     PG4IOCONLbits.OVRENH = 0; 
@@ -254,6 +279,34 @@ void EnablePWMOutputsInverterA(void)
     
     // 0 = PWM Generator provides data for the PWM1H pin
     PG1IOCONLbits.OVRENH = 0;  
+    // 0 = PWM Generator provides data for the PWM1L pin
+    PG1IOCONLbits.OVRENL = 0;     
+}
+
+void EnablePWMOutputsInverterAGenerator(void)
+{    
+    
+        /** Set Override Data on all PWM outputs, in other words, FETS are off
+         * When disabled */
+    // 0b00 = State for PWM4H,L, if Override is Enabled
+    PG4IOCONLbits.OVRDAT = 0;
+    // 0b00 = State for PWM2H,L, if Override is Enabled
+    PG2IOCONLbits.OVRDAT = 0; 
+    // 0b00 = State for PWM1H,L, if Override is Enabled
+    PG1IOCONLbits.OVRDAT = 0; 
+    
+    // 1 = FET is off for generator mode
+    PG4IOCONLbits.OVRENH = 1; 
+    // 0 = PWM Generator provides data for the PWM4L pin
+    PG4IOCONLbits.OVRENL = 0; 
+    
+    // 1 = FET is off for generator mode
+    PG2IOCONLbits.OVRENH = 1;
+    // 0 = PWM Generator provides data for the PWM2L pin
+    PG2IOCONLbits.OVRENL = 0; 
+    
+    // 1 = FET is off for generator mode
+    PG1IOCONLbits.OVRENH = 1;  
     // 0 = PWM Generator provides data for the PWM1L pin
     PG1IOCONLbits.OVRENL = 0;     
 }

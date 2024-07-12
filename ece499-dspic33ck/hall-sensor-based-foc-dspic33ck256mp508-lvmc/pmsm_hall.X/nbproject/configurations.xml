@@ -327,6 +327,8 @@
                   value="${memories.instruction.ram.ranges}"/>
         <property key="memories.programmemory" value="true"/>
         <property key="memories.programmemory.ranges" value="0-2beff"/>
+        <property key="programmerToGoFilePath"
+                  value="R:/ECE499-buoyancy-energy-storage-system/ece499-dspic33ck/hall-sensor-based-foc-dspic33ck256mp508-lvmc/pmsm_hall.X/debug/default/pmsm_hall_ptg"/>
         <property key="programoptions.donoteraseauxmem" value="false"/>
         <property key="programoptions.eraseb4program" value="true"/>
         <property key="programoptions.pgmentry.voltage" value="low"/>
@@ -425,6 +427,8 @@
                   value="${memories.instruction.ram.ranges}"/>
         <property key="memories.programmemory" value="true"/>
         <property key="memories.programmemory.ranges" value="0-2beff"/>
+        <property key="programmerToGoFilePath"
+                  value="R:/ECE499-buoyancy-energy-storage-system/ece499-dspic33ck/hall-sensor-based-foc-dspic33ck256mp508-lvmc/pmsm_hall.X/debug/default/pmsm_hall_ptg"/>
         <property key="programoptions.donoteraseauxmem" value="false"/>
         <property key="programoptions.eraseb4program" value="true"/>
         <property key="programoptions.pgmentry.voltage" value="low"/>

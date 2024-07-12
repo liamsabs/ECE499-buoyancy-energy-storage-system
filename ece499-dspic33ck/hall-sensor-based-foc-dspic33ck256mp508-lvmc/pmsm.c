@@ -153,18 +153,28 @@ int main ( void )
             
             if (IsPressed_Button1())
             {
-                if  (uGF.bits.RunMotor == 1)
-                {
-                    ResetParmeters();
-                }
-                else
-                {
-                    EnablePWMOutputsInverterA();
-                    uGF.bits.RunMotor = 1;
-                    LED1 = 0;
-                }
-
+               
+                ResetParmeters();
             }
+            
+            else if(IsPressed_Button2())
+            { 
+                
+                ResetParmeters();
+                EnablePWMOutputsInverterAMotor();
+                uGF.bits.MotorState = 1;
+                LED1 = 0;
+                
+            }
+            else if(IsPressed_Button3()){
+                ResetParmeters();
+                EnablePWMOutputsInverterAGenerator();
+                uGF.bits.MotorState = 2;
+                //LED2 = 1;
+           }
+             
+             
+            
         }
 
     } // End of Main loop
@@ -219,7 +229,7 @@ void ResetParmeters(void)
     DisablePWMOutputsInverterA();
     
     /* Stop the motor   */
-    uGF.bits.RunMotor = 0;        
+    uGF.bits.MotorState = 0;        
     /* Set the reference speed value to 0 */
     ctrlParm.qVelRef = 0;
     /* Restart in open loop */
@@ -519,7 +529,7 @@ void __attribute__((__interrupt__,no_auto_psv)) _ADCInterrupt()
         break;  
     }
 #endif
-    if (uGF.bits.RunMotor)
+    if (uGF.bits.MotorState)
     {
         //Measure the currents and store them in measure Inputs variable
         measureInputs.current.Ia = ADCBUF_INV_A_IPHASE1;
@@ -589,7 +599,7 @@ void __attribute__((__interrupt__,no_auto_psv)) _ADCInterrupt()
         PWMDutyCycleSet(&pwmDutycycle);
     } 
  /** SAME HERE! This is where we will need to measure current for generation**/
-    if (uGF.bits.RunMotor == 0)
+    if (uGF.bits.MotorState == 0)
     {
         measureInputs.current.Ia = ADCBUF_INV_A_IPHASE1;
         measureInputs.current.Ib = ADCBUF_INV_A_IPHASE2; 
