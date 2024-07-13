@@ -50,6 +50,7 @@ extern "C" {
  */
 typedef struct
 {
+
     /* Reference velocity */
     int16_t   qVelRef;
     /* Vd flux reference value */
@@ -103,8 +104,8 @@ typedef union
         unsigned ChangeMode:1;
         /* Speed doubled indication */
         unsigned ChangeSpeed:1;
-       /* Unused bits */
-        unsigned    :12;
+        /* Unused bits */
+        unsigned    :11;
     } bits;
     uint16_t Word;
 } UGF_T;

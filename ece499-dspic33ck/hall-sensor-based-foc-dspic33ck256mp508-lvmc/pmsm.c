@@ -153,7 +153,7 @@ int main ( void )
             
             if (IsPressed_Button1())
             {
-               
+                
                 ResetParmeters();
             }
             
@@ -161,15 +161,17 @@ int main ( void )
             { 
                 
                 ResetParmeters();
+                uGF.bits.MotorState = 0b01;
                 EnablePWMOutputsInverterAMotor();
-                uGF.bits.MotorState = 1;
+                
                 LED1 = 0;
                 
             }
             else if(IsPressed_Button3()){
                 ResetParmeters();
+                uGF.bits.MotorState = 0b10;
                 EnablePWMOutputsInverterAGenerator();
-                uGF.bits.MotorState = 2;
+                
                 //LED2 = 1;
            }
              
@@ -254,7 +256,7 @@ void ResetParmeters(void)
     DoControl()
 
   Summary:
-    Executes one PI iteration for each of the three loops Id,Iq,Speed
+    Executes one PI iteration for each of the three loops Id,Iq,Speed for motoring mode
 
   Description:
     This routine executes one PI iteration for each of the three loops
@@ -314,7 +316,13 @@ void DoControl( void )
         piInputIq.piState.outMin = - piInputIq.piState.outMax;    
         /* PI control for Q */
         /* Speed reference */
-        ctrlParm.qVelRef = Q_CURRENT_REF_OPENLOOP;
+        if(uGF.bits.MotorState==0b01){
+            ctrlParm.qVelRef = Q_CURRENT_REF_OPENLOOP;
+        }
+        else if(uGF.bits.MotorState==0b10){
+            ctrlParm.qVelRef = -Q_CURRENT_REF_OPENLOOP;
+        }
+        
         /* q current reference is equal to the velocity reference 
          while d current reference is equal to 0
         for maximum startup torque, set the q current to maximum acceptable 
@@ -336,9 +344,16 @@ void DoControl( void )
         * and NOMINALSPEED_ELECTR to set the speed reference*/
         
         //Maybe will remove for our speed, replace potValue with our actual speed
-        ctrlParm.targetSpeed = (__builtin_mulss(measureInputs.potValue,
-                NOMINALSPEED_ELECTR-ENDSPEED_ELECTR)>>15) +
-                ENDSPEED_ELECTR; 
+        if(uGF.bits.MotorState==0b01){
+            ctrlParm.targetSpeed = (__builtin_mulss(measureInputs.potValue,
+                    NOMINALSPEED_ELECTR-ENDSPEED_ELECTR)>>15) +
+                    ENDSPEED_ELECTR; 
+        }
+        else if(uGF.bits.MotorState==0b10){
+            ctrlParm.targetSpeed = -((__builtin_mulss(measureInputs.potValue,
+                    NOMINALSPEED_ELECTR-ENDSPEED_ELECTR)>>15) +
+                    ENDSPEED_ELECTR); 
+        }
         
         //Only execute speed control ever SPEEDREFRAMP_COUNT Itterations
         if  (ctrlParm.speedRampCount < SPEEDREFRAMP_COUNT)
@@ -375,7 +390,12 @@ void DoControl( void )
             /* Just changed from open loop */
             uGF.bits.ChangeMode = 0;
             piInputOmega.piState.integrator = (int32_t)ctrlParm.qVqRef << 13;
-            ctrlParm.qVelRef = ENDSPEED_ELECTR;
+            if(uGF.bits.MotorState==0b01){
+                ctrlParm.qVelRef = ENDSPEED_ELECTR;
+            }
+            else if(uGF.bits.MotorState==0b10){
+                ctrlParm.qVelRef = -ENDSPEED_ELECTR;   
+            }
         }
 
         /* If TORQUE MODE skip the speed controller */
@@ -455,8 +475,10 @@ void __attribute__((interrupt, no_auto_psv)) HAL_MC1HallStateChangeInterrupt ()
         mcappData.period = mcappData.timerValue;
 //    }
     mcappData.sector = HAL_HallValueRead();
-    // Instead of making abrupt correction to the angle corresponding to hall sector, find the error and make gentle correction  
+    // Instead of making abrupt correction to the angle corresponding to hall sector, find the error and make gentle correction 
+  
     mcappData.hallThetaError = (sectorToAngle[mcappData.sector] + OFFSET_CORRECTION) - mcappData.HallTheta;
+    
     // Find the correction to be done in every step
     // If "hallThetaError" is 2000, and "hallCorrectionFactor" = (2000/8) = 250
     // So the error of 2000 will be corrected in 8 steps, with each step being 250
@@ -529,7 +551,7 @@ void __attribute__((__interrupt__,no_auto_psv)) _ADCInterrupt()
         break;  
     }
 #endif
-    if (uGF.bits.MotorState)
+    if (uGF.bits.MotorState!=0)
     {
         //Measure the currents and store them in measure Inputs variable
         measureInputs.current.Ia = ADCBUF_INV_A_IPHASE1;
@@ -545,18 +567,31 @@ void __attribute__((__interrupt__,no_auto_psv)) _ADCInterrupt()
         MC_TransformPark_Assembly(&ialphabeta,&sincosTheta,&idq);
         /* Calculate control values */
         DoControl();
+       
         /* Calculate qAngle */
         CalculateParkAngle();
 
         mcappData.periodStateVar+= (((long int)mcappData.period - 
                 (long int)mcappData.periodFilter)*(int)(mcappData.PeriodKFilter));
+        
         mcappData.periodFilter = (int)(mcappData.periodStateVar>>15);
-           
-        mcappData.phaseInc = __builtin_divud((uint32_t)PHASE_INC_MULTI,
+        
+        //If it's in reverse make sure the speed and the phase inc reflect that
+        if(uGF.bits.MotorState==0b01){
+            mcappData.phaseInc = __builtin_divud((uint32_t)PHASE_INC_MULTI,
                                         (unsigned int)(mcappData.periodFilter));
 
-        mcappData.SpeedHall = __builtin_divud((uint32_t)SPEED_MULTI, 
+            mcappData.SpeedHall = __builtin_divud((uint32_t)SPEED_MULTI, 
                                         (unsigned int)(mcappData.periodFilter));
+        }
+        //Otherwise it's not backwards so we good
+        else if (uGF.bits.MotorState==0b10){
+            mcappData.phaseInc = -__builtin_divud((uint32_t)PHASE_INC_MULTI,
+                                        (unsigned int)(mcappData.periodFilter));
+
+            mcappData.SpeedHall = -__builtin_divud((uint32_t)SPEED_MULTI, 
+                                        (unsigned int)(mcappData.periodFilter));
+        }
         /* if open loop */
         if (uGF.bits.OpenLoop == 1)
         {
@@ -588,8 +623,7 @@ void __attribute__((__interrupt__,no_auto_psv)) _ADCInterrupt()
                                                     &pwmDutycycle);
         PWMDutyCycleSet(&pwmDutycycle);            
     }
-    
-    /** Sam Note! This is where we will need to put in the logic for generating **/
+  
     else
     {
         INVERTERA_PWM_TRIGA = ADC_SAMPLING_POINT;
@@ -598,7 +632,6 @@ void __attribute__((__interrupt__,no_auto_psv)) _ADCInterrupt()
         pwmDutycycle.dutycycle1 = MIN_DUTY;
         PWMDutyCycleSet(&pwmDutycycle);
     } 
- /** SAME HERE! This is where we will need to measure current for generation**/
     if (uGF.bits.MotorState == 0)
     {
         measureInputs.current.Ia = ADCBUF_INV_A_IPHASE1;
