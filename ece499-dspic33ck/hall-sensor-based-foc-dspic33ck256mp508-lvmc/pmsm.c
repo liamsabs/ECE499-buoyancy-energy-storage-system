@@ -32,6 +32,8 @@
 * certify, or support the code.
 *
 *******************************************************************************/
+
+#define NOMECH
 #include <xc.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -320,7 +322,12 @@ void DoControl( void )
             ctrlParm.qVelRef = Q_CURRENT_REF_OPENLOOP;
         }
         else if(uGF.bits.MotorState==0b10){
-            ctrlParm.qVelRef = -Q_CURRENT_REF_OPENLOOP;
+           ctrlParm.targetSpeed = -((__builtin_mulss(measureInputs.potValue,
+                    NOMINALSPEED_ELECTR-ENDSPEED_ELECTR)>>15) +
+                    ENDSPEED_ELECTR);
+            #ifdef NOMECH
+            ctrlParm.targetSpeed=0;
+            #endif
         }
         
         /* q current reference is equal to the velocity reference 
@@ -353,6 +360,9 @@ void DoControl( void )
             ctrlParm.targetSpeed = -((__builtin_mulss(measureInputs.potValue,
                     NOMINALSPEED_ELECTR-ENDSPEED_ELECTR)>>15) +
                     ENDSPEED_ELECTR); 
+            #ifdef NOMECH
+                ctrlParm.targetSpeed = 0;
+            #endif
         }
         
         //Only execute speed control ever SPEEDREFRAMP_COUNT Itterations
@@ -392,9 +402,13 @@ void DoControl( void )
             piInputOmega.piState.integrator = (int32_t)ctrlParm.qVqRef << 13;
             if(uGF.bits.MotorState==0b01){
                 ctrlParm.qVelRef = ENDSPEED_ELECTR;
+                #
             }
             else if(uGF.bits.MotorState==0b10){
                 ctrlParm.qVelRef = -ENDSPEED_ELECTR;   
+                #ifdef NOMECH
+                ctrlParm.qVelRef = 0;
+                #endif
             }
         }
 
@@ -556,8 +570,9 @@ void __attribute__((__interrupt__,no_auto_psv)) _ADCInterrupt()
         //Measure the currents and store them in measure Inputs variable
         measureInputs.current.Ia = ADCBUF_INV_A_IPHASE1;
         measureInputs.current.Ib = ADCBUF_INV_A_IPHASE2; 
+        measureInputs.current.Ibus= ADCBUF_INV_A_IBUS;
 
-        //Calibrate based on offsett (subtract offset from the measured value)
+        //Calibrate based on offset (subtract offset from the measured value)
         MCAPP_MeasureCurrentCalibrate(&measureInputs);
         iabc.a = measureInputs.current.Ia;
         iabc.b = measureInputs.current.Ib;
