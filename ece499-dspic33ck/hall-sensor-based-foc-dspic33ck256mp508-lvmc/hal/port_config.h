@@ -76,11 +76,17 @@
 #define SW1                   PORTEbits.RE11
 // SW2 :  (RE12)
 #define SW2                   PORTEbits.RE12
+// SW3 :  (RE13)   
+#define SW3                   PORTEbits.RE13
         
-// S2 : PIM #83 - Used as START/STOP button of Motor
+        
+
+        /*// S2 : PIM #83 - Used as START/STOP button of Motor
 #define BUTTON_START_STOP        SW1
 // S3 : PIM #84 - Used as Speed HALF/DOUBLE button of Motor
-#define BUTTON_SPEED_HALF_DOUBLE      SW2
+#define BUTTON_SPEED_HALF_DOUBLE      SW2*/
+        
+ 
 
 
 // Debug LEDs

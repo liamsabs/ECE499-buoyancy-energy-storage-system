@@ -50,6 +50,7 @@ extern "C" {
  */
 typedef struct
 {
+
     /* Reference velocity */
     int16_t   qVelRef;
     /* Vd flux reference value */
@@ -90,16 +91,21 @@ typedef union
 {
     struct
     {
-        /* Run motor indication */
-        unsigned RunMotor:1;
+        /* Run motor indication 
+         00=stopped
+         * 01=running
+         * 10=generating
+         * 11=Unused
+         */
+        unsigned MotorState:2;
         /* Open loop/closed loop indication */
         unsigned OpenLoop:1;
         /* Mode changed indication - from open to closed loop */
         unsigned ChangeMode:1;
         /* Speed doubled indication */
         unsigned ChangeSpeed:1;
-       /* Unused bits */
-        unsigned    :12;
+        /* Unused bits */
+        unsigned    :11;
     } bits;
     uint16_t Word;
 } UGF_T;

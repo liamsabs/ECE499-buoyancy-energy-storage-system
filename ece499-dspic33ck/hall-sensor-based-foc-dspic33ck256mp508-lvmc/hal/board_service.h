@@ -84,13 +84,15 @@ typedef struct
 #define HAL_MC1HallStateChangeTimerStart             Timer_Start    
 
 extern void DisablePWMOutputsInverterA(void);
-extern void EnablePWMOutputsInverterA(void);
+extern void EnablePWMOutputsInverterAMotor(void);
+extern void EnablePWMOutputsInverterAGenerator(void);
 extern void ClearPWMPCIFaultInverterA(void);
 extern void BoardServiceInit(void);
 extern void BoardServiceStepIsr(void);
 extern void BoardService(void);
 extern bool IsPressed_Button1(void);
 extern bool IsPressed_Button2(void);
+extern bool IsPressed_Button3(void);
 extern void InitPeripherals(void);
 extern void PWMDutyCycleSetDualEdge(MC_DUTYCYCLEOUT_T *,MC_DUTYCYCLEOUT_T *);
 extern void PWMDutyCycleSet(MC_DUTYCYCLEOUT_T *);

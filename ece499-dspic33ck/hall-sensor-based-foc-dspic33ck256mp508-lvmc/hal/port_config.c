@@ -258,6 +258,8 @@ void MapGPIOHWFunction(void)
     TRISEbits.TRISE11 = 1;           // PIN:59 - RE11
     // SW2 : 
     TRISEbits.TRISE12 = 1;           // PIN:62 - RE12
+    //SW3 :
+    TRISEbits.TRISE13 = 1;           //PIN: 64 - RE13
 	
 	/** Diagnostic Interface for LVMC Board etc.
         Re-map UART Channels to the device pins connected to the following 
@@ -303,7 +305,7 @@ void CN_Configure(void)
 /*    CNSTYLE: Change Notification Style Selection bit
     1 = Edge style (detects edge transitions, bits are used for a CNE)
     0 = Mismatch style (detects change from last port read event)       */    
-    CNCONEbits.CNSTYLE = 0;
+    CNCONEbits.CNSTYLE = 0;     
      
     CNEN0E = 0;
     CNEN0Ebits.CNEN0E8 = 1;

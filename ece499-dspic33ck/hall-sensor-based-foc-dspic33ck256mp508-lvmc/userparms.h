@@ -77,16 +77,16 @@ controllers, tuning mode will disable the speed PI controller */
 #define MAXIMUM_SPEED_RPM    3500 
 
 /* The following values are given in the xls attached file */
-#define NORM_CURRENT_CONST     0.000671
+#define NORM_CURRENT_CONST     0.000305
 /* normalized ls/dt value */
-#define NORM_LSDTBASE 8129
+#define NORM_LSDTBASE 1207
 /* normalized rs value */
-#define NORM_RS  9044
+#define NORM_RS  860
 /* the calculation of Rs gives a value exceeding the Q15 range so,
  the normalized value is further divided by 2 to fit the 32768 limit
  this is taken care in the estim.c where the value is implied
  normalized inv kfi at base speed */
-#define NORM_INVKFIBASE  7956
+#define NORM_INVKFIBASE  9484
 /* the calculation of InvKfi gives a value which not exceed the Q15 limit
    to assure that an increase of the term with 5 is possible in the lookup table
    for high flux weakening the normalized is initially divided by 2
@@ -122,7 +122,7 @@ before the open loop speed ramp up */
 #define Q_CURRENT_REF_OPENLOOP NORM_CURRENT(0.4)
 
 /* Specify Over Current Limit - DC BUS */
-#define Q15_OVER_CURRENT_THRESHOLD NORM_CURRENT(5.0)
+#define Q15_OVER_CURRENT_THRESHOLD NORM_CURRENT(10)
 
 /* Maximum motor speed converted into electrical speed */
 #define MAXIMUMSPEED_ELECTR MAXIMUM_SPEED_RPM*NOPOLESPAIRS
@@ -139,7 +139,7 @@ is needed for assuring the motor can follow the reference imposed /
 minimum value accepted */
 #define SPEEDREFRAMP   Q15(0.00003)  
 /* The Speed Control Loop Executes every  SPEEDREFRAMP_COUNT */
-#define SPEEDREFRAMP_COUNT   3  
+#define SPEEDREFRAMP_COUNT   5  
     
 /**  SPEED MULTIPLIER CALCULATION = ((FCY*60)/(TIMER_PRESCALER*6))
  * This is to calculate speed in electrical RPM  */
