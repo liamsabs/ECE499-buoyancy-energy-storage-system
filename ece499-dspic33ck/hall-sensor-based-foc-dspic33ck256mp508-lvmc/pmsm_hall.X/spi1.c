@@ -38,7 +38,7 @@
 
 // Section: Included Files
 #include <xc.h>
-#include "../spi1.h"
+#include "../../ece499-dspic33ck/hall-sensor-based-foc-dspic33ck256mp508-lvmc/hal/spi1.h"
 
 // Section: File specific data type definitions
 
