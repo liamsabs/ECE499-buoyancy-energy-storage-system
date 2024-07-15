@@ -85,20 +85,35 @@ static const struct SPI1_CLIENT_CONFIG config[] = {
 
 void SPI1_Initialize (void)
 {
-    // SPIBRGL 0; 
-    SPI1BRGL = 0x0;
-    // AUDEN disabled; FRMEN disabled; AUDMOD I2S; FRMSYPW One clock wide; AUDMONO stereo; FRMCNT 0x0; MSSEN disabled; FRMPOL disabled; IGNROV disabled; SPISGNEXT not sign-extended; FRMSYNC disabled; URDTEN disabled; IGNTUR disabled; 
-    SPI1CON1H = 0x0;
-    // WLENGTH 0; 
-    SPI1CON2L = 0x0;
-    // SPIROV disabled; FRMERR disabled; 
-    SPI1STATL = 0x0;
-    // SPIURDTL 0; 
-    SPI1URDTL = 0x0;
-    // SPIURDTH 0; 
-    SPI1URDTH = 0x0;
-    // SPIEN disabled; DISSDO disabled; MCLKEN FOSC/2; CKP Idle:Low, Active:High; SSEN enabled; MSTEN Client; MODE16 disabled; SMP Middle; DISSCK disabled; SPIFE Frame Sync pulse precedes; CKE Idle to Active; MODE32 disabled; SPISIDL disabled; ENHBUF enabled; DISSDI disabled; 
-    SPI1CON1L = 0x81;
+    /*Clearing SPI BUF Registers*/
+    SPI1BUFH = 0;
+    SPI1BUFL = 0;
+    
+    /*Clearing Interrupts for Configuration*/
+    _SPI1IF = 0; // Clear Interrupt Flag
+    _SPI1IE = 0; // Disable Interrupt
+    
+    /*Set SPI Interrupt Priority*/
+    _SPI1IP = 1;
+    
+    /* SPI1CON1 Register Settings*/
+    SPI1CON1bits.DISSCK = 0; // Internal Serial Clock is enabled
+    SPI1CON1bits.DISSDO = 0; // SDOx pin is controlled by the module
+    SPI1CON1bits.MODE16 = 0; // Communication is byte-wide (8 bits)
+    SPI1CON1bits.SMP = 0; // Input data is sampled at the middle of data output time.
+    SPI1CON1bits.CKE = 0; // Serial output data changes on transition from Idle clock state to active clock state
+    SPI1CON1bits.CKP = 0; // Idle state for clock is a low level; active
+    SPI1CON1bits.MSTEN = 0; // Master mode disabled
+    SPI1CON1bits.SSEN = 1; //Set Slave select pin to active for slave mode
+    SPI1CON1bits.SPIEN = 1; //
+    
+    /*SPI1 Status Register Setting*/ 
+    SPI1STATLbits.SPIROV = 0; // No Receive Overflow has occurred
+    
+    /*Enabling the Interrupt Module*/
+    _SPI1IF = 0; // Clear Interrupt Flag
+    SPI1CON1bits.SPIEN = 1; //enable SPI module
+    _SPI1IE = 1; // Disable Interrupt
 }
 
 void SPI1_Deinitialize (void)

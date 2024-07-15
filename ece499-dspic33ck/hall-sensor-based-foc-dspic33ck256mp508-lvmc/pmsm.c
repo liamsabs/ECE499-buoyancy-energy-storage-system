@@ -153,6 +153,7 @@ int main ( void )
         {
             DiagnosticsStepMain();
             BoardService();
+            SPI1_Initialize();
             
             if (IsPressed_Button1())
             {
