@@ -97,6 +97,20 @@ MCAPP_MEASURE_T measureInputs;
 /*Number of steps in which the Hall sensor angle correction is done
  i.e,2^HALL_CORRECTION_DIVISOR  */
 #define HALL_CORRECTION_STEPS   8 
+/* SPI1 Receive Buffer Size*/
+#define RX_BUFFER_SIZE  32
+/* SPI1 Transmit Buffer Size*/
+#define TX_BUFFER_SIZE  32
+
+volatile uint8_t rxBuffer[RX_BUFFER_SIZE];
+volatile uint8_t txBuffer[TX_BUFFER_SIZE] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE,
+                                             0xFF, 0x11, 0x22, 0x33, 0x44,
+                                             0x55, 0x66, 0x77, 0x88, 0x99,
+                                             0x00, 0x01, 0x02};
+
+volatile uint8_t rxIndex = 0;
+volatile uint8_t txIndex = 0;
+volatile uint8_t txBytesToSend = 0;
 
 void InitControlParameters(void);
 void DoControl( void );
@@ -136,6 +150,8 @@ int main ( void )
     /* Initialize Peripherals */
     InitPeripherals();
     DiagnosticsInit();
+    SPI1_Initialize();
+    __builtin_enable_interrupts();
     
     BoardServiceInit();
     HAL_MC1HallStateChangeTimerPrescalerSet(TIMER_PRESCALER);
@@ -153,7 +169,6 @@ int main ( void )
         {
             DiagnosticsStepMain();
             BoardService();
-            SPI1_Initialize();
             
             if (IsPressed_Button1())
             {
@@ -683,6 +698,40 @@ void __attribute__((__interrupt__,no_auto_psv)) _ADCInterrupt()
 	adcDataBuffer = ClearADCIF_ReadADCBUF();
     ClearADCIF();   
 }
+
+void __attribute__((interrupt, no_auto_psv)) _SPI1Interrupt(void)
+{
+    // Check if SPI receive buffer is full
+    if (SPI1STATLbits.SPIRBF) {
+        rxBuffer[rxIndex++] = SPI1BUFL;  // Read received data
+
+        // Check if we have received 1 byte
+        if (rxIndex == 1) {
+            // Prepare to send 17 bytes back
+            txIndex = 0;
+            txBytesToSend = 17;
+            SPI1BUFL = txBuffer[txIndex++]; // Start sending first byte
+        }
+
+        // Clear SPI receive interrupt flag
+        IFS0bits.SPI1RXIF = 0;
+    }
+
+    // Check if SPI transmit buffer is empty
+    if (SPI1STATLbits.SPITBF == 0 && txBytesToSend > 0) {
+        SPI1BUFL = txBuffer[txIndex++]; // Send next byte
+
+        if (--txBytesToSend == 0) {
+            // All bytes have been sent
+            txIndex = 0;
+        }
+
+        // Clear SPI transmit interrupt flag
+        IFS0bits.SPI1TXIF = 0;
+    }
+}
+
+
 // *****************************************************************************
 /* Function:
     CalculateParkAngle ()
