@@ -70,8 +70,8 @@ class cntrl_pnl:
         self.num_disp_fr.columnconfigure(0, weight=1)
         self.num_disp_fr.rowconfigure(1, weight=1)
 
-        # START WINDOW
-
+    # START WINDOW
+    def start_cntrl_pnl(self):
         self.root.update()
         self.root.after_idle(self.update_display)
         self.root.mainloop()
@@ -79,12 +79,14 @@ class cntrl_pnl:
     def update_display(self, *args):
         self.num_disp_obj.delete(1.0, END)
         self.num_disp_obj.insert(1.0, "Group 21 - Bouyancy Energy Storage System (BESS)")
+        print("updated display")
+        self.root.after(1000, self.update_display)
 
-    def stop_btn_handler():
+    def stop_btn_handler(self):
         print("handling stop button")
 
-    def generate_btn_handler():
+    def generate_btn_handler(self):
         print("handling generate button")
 
-    def store_btn_handler():
+    def store_btn_handler(self):
         print("handling store button")
