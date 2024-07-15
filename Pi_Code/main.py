@@ -30,9 +30,13 @@ _thread.start_new_thread(spiRecieve17Bytes_forever())
 ################################################ DISPLAY RECIEVED DATA ################################################
 #######################################################################################################################
 
+# this pops the first thing in the FIFO queue and prints it to the screen.
+# eventually it will print it on the screen of the dashboard
+
 while(True):
     if len(recieved_data_FIFO) > 0:
-        print(recieved_data_FIFO.pop(0))
+        first_in_queue = recieved_data_FIFO.pop(0)
+        print(first_in_queue)
     else:
         print("queue of recieved data is empty")
     time.sleep(1)
