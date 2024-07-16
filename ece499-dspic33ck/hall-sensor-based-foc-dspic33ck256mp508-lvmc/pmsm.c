@@ -98,17 +98,13 @@ MCAPP_MEASURE_T measureInputs;
  i.e,2^HALL_CORRECTION_DIVISOR  */
 #define HALL_CORRECTION_STEPS   8 
 /* SPI1 Receive Buffer Size*/
-#define RX_BUFFER_SIZE  32
+#define SPI_RX_BUFFER_SIZE  1
 /* SPI1 Transmit Buffer Size*/
-#define TX_BUFFER_SIZE  32
+#define SPI_TX_BUFFER_SIZE  5 
 
-volatile uint8_t rxBuffer[RX_BUFFER_SIZE];
-volatile uint8_t txBuffer[TX_BUFFER_SIZE] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE,
-                                             0xFF, 0x11, 0x22, 0x33, 0x44,
-                                             0x55, 0x66, 0x77, 0x88, 0x99,
-                                             0x00, 0x01, 0x02};
+volatile uint8_t rxBuffer;
+volatile uint8_t txBuffer[SPI_TX_BUFFER_SIZE] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE};
 
-volatile uint8_t rxIndex = 0;
 volatile uint8_t txIndex = 0;
 volatile uint8_t txBytesToSend = 0;
 
@@ -703,32 +699,41 @@ void __attribute__((interrupt, no_auto_psv)) _SPI1Interrupt(void)
 {
     // Check if SPI receive buffer is full
     if (SPI1STATLbits.SPIRBF) {
-        rxBuffer[rxIndex++] = SPI1BUFL;  // Read received data
-
-        // Check if we have received 1 byte
-        if (rxIndex == 1) {
-            // Prepare to send 17 bytes back
-            txIndex = 0;
-            txBytesToSend = 17;
-            SPI1BUFL = txBuffer[txIndex++]; // Start sending first byte
-        }
-
-        // Clear SPI receive interrupt flag
-        IFS0bits.SPI1RXIF = 0;
+        
+        uint8_t rxBuffer = SPI1BUFL;  // Read received data
+        
+        /* Processing Commands */
+        if (rxBuffer == 0x01){ // store command
+            
+            /* Logic For Spinning Motor One Way */
+            ResetParmeters();
+            uGF.bits.MotorState = 0b01;
+            EnablePWMOutputsInverterAMotor();
+            
+        } else if (rxBuffer == 0x02){ // generate 
+            
+            /* Logic For Spinning Motor Other Way */
+            ResetParmeters();
+            uGF.bits.MotorState = 0b10;
+            EnablePWMOutputsInverterAMotor();
+            
+        } else if (rxBuffer == 0x03){ // pause
+            
+            /* Logic for Stopping Motor */
+            ResetParmeters();
+            
+        } else if (rxBuffer == 0x04){ // sensor data request
+            for (int i = 0; i < SPI_TX_BUFFER_SIZE; i++) {
+                /* Logic for Sending Each Byte */
+                SPI1BUFL = txBuffer[i];  // Transmit each byte
+                while (SPI1STATLbits.SPITBF);  // Wait for transmit buffer to be empty
+                IFS0bits.SPI1TXIF = 0;  // Clear SPI1 transmit interrupt flag
+            }
+        }   
     }
-
-    // Check if SPI transmit buffer is empty
-    if (SPI1STATLbits.SPITBF == 0 && txBytesToSend > 0) {
-        SPI1BUFL = txBuffer[txIndex++]; // Send next byte
-
-        if (--txBytesToSend == 0) {
-            // All bytes have been sent
-            txIndex = 0;
-        }
-
-        // Clear SPI transmit interrupt flag
-        IFS0bits.SPI1TXIF = 0;
-    }
+    
+    // Clear SPI interrupt flag
+    IFS7bits.SPI1IF = 0;    // Clear SPI1 interrupt flag
 }
 
 
