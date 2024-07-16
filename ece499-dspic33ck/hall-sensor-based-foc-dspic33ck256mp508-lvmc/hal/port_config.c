@@ -260,6 +260,9 @@ void MapGPIOHWFunction(void)
     TRISEbits.TRISE12 = 1;           // PIN:62 - RE12
     //SW3 :
     TRISEbits.TRISE13 = 1;           //PIN: 64 - RE13
+    
+    /** Output Pin to Trigger Interrupt on Master ((MicroBus_A_AN) **/
+    TRISEbits.TRISE1 = 0;            //PIN: 4  - RE1 [To write: write to LATEbits.LATE1 or _LATE1] 
 	
 	/** Diagnostic Interface for LVMC Board etc.
         Re-map UART Channels to the device pins connected to the following 
@@ -275,7 +278,7 @@ void MapGPIOHWFunction(void)
     * SS1R   (SPI1 Slave Select Input)  : PIN #75 TMS/RP42/PWM3H/PMD1/RB10
     * _RP74R  (SPI1 Output (MISO))      : PIN #38 AN18/CMP3C/ISRC3/RP74/PMD9/PMA9/RD10
     */
-   // Inputs: Require RP (Remappable pin configuration)
+   // Inputs: Require RP (Re-mappable pin configuration)
    _SDI1R = 75;  // RP75 (RD11) as SPI1 SDI input
    _SCK1R = 76;  // RP76 (RD12) as SPI1 SCK input
    _SS1R  = 42;  // RP42 (RB10) as SPI1 SS input
@@ -283,8 +286,7 @@ void MapGPIOHWFunction(void)
    // Outputs: Require mapping RP to function
    _RP74R = _RPOUT_SDO1;  // Map RP74 (RD10) to SPI1 SDO (MISO) output
     
-    
-
+    // Change Notification Configuration
     CN_Configure();
 }
 

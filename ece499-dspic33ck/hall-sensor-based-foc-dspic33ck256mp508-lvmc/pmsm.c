@@ -83,14 +83,18 @@ MC_PIPARMOUT_T piOutputOmega;
 volatile uint16_t adcDataBuffer;
 MCAPP_MEASURE_T measureInputs;
 
+/*SPI calling frequency*/
+#define SENSE_SAMPLING_PERIOD_SEC 0.1
 
+/* SPI Counter */
+#define SENSOR_SAMPLE_RATE_REVS (uint32_t)(PWMFREQUENCY_HZ * SENSE_SAMPLING_PERIOD_SEC)
 
 #define SPI_RX_BUFFER_SIZE  1
 /* SPI1 Transmit Buffer Size*/
 #define SPI_TX_BUFFER_SIZE  5 
 
 volatile uint8_t rxBuffer;
-volatile uint8_t txBuffer[SPI_TX_BUFFER_SIZE] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE};
+volatile uint8_t txBuffer[SPI_TX_BUFFER_SIZE];
 
 System system = {.state = IDLE, .unpausedState = IDLE, .position = 0};
 
@@ -111,9 +115,10 @@ System system = {.state = IDLE, .unpausedState = IDLE, .position = 0};
 #define HALL_CORRECTION_STEPS   8 
 
 void InitControlParameters(void);
-void DoControl( void );
+void DoControl(void);
 void CalculateParkAngle(void);
 void ResetParmeters(void);
+void prepareTxData(void);
 
 // *****************************************************************************
 /* Function:
@@ -141,6 +146,7 @@ void ResetParmeters(void);
 
 int main ( void )
 {
+    
     InitOscillator();
     SetupGPIOPorts();
     /* Turn on LED2 to indicate the device is programmed */
@@ -666,6 +672,43 @@ void __attribute__((__interrupt__,no_auto_psv)) _ADCInterrupt()
 
     //Update X2C scope
     DiagnosticsStepIsr();
+    
+    // State and message processing logic
+    if(system.state == STORING){
+        
+        if(++system.position >= STORING_DONE_POS){ //increments then checks if end of storing
+            
+            system.state = STORED; //set state to stored
+            ResetParmeters(); // stop motoring
+            /*TODO: Engage Locking Mechanism*/
+            prepareTxData(); //acquire sensor and system state data
+            LATEbits.LATE1 = 1; //set PORTE1 high (MicroBus_A_AN)
+            
+        }else if( system.position % SENSOR_SAMPLE_RATE_REVS == 0 ){ //if multiple of sample rate, send sensor data req to master 
+        
+            prepareTxData(); //acquire sensor and system state data
+            LATEbits.LATE1 = 1; //set PORTE1 high (MicroBus_A_AN)
+  
+        }
+        
+    }else if (system.state == GENERATING){
+        
+        if(--system.position <= GEN_DONE_POS){ //decrements then checks if end of generating
+            
+            system.state = IDLE; // set state to IDLE
+            ResetParmeters(); // stop generating
+            prepareTxData(); //acquire sensor and system state data
+            LATEbits.LATE1 = 1; //set PORTE1 high (MicroBus_A_AN)
+            
+        }else if( system.position % SENSOR_SAMPLE_RATE_REVS == 0 ){ //if multiple of sample rate, send sensor data req to master 
+        
+            prepareTxData(); //acquire sensor and system state data
+            LATEbits.LATE1 = 1; //set PORTE1 high (MicroBus_A_AN)
+  
+        }
+    }
+
+
     /* Read ADC Buffet to Clear Flag */
 	adcDataBuffer = ClearADCIF_ReadADCBUF();
     ClearADCIF();   
@@ -781,11 +824,49 @@ void __attribute__((interrupt, no_auto_psv)) _SPI1Interrupt(void)
                 while (SPI1STATLbits.SPITBF);  // Wait for transmit buffer to be empty
                 IFS0bits.SPI1TXIF = 0;  // Clear SPI1 transmit interrupt flag
             }
+            LATEbits.LATE1 = 0; //clear PORTE1 (MicroBus_A_AN) to trigger future interrupts on master
         }   
     }
     
     // Clear SPI interrupt flag
     IFS7bits.SPI1IF = 0;    // Clear SPI1 interrupt flag
+}
+// *****************************************************************************
+/* Function:
+ prepareTxData(void)
+
+  Summary:
+    Loads Transmit buffer with bus voltage, bus current, and system state
+
+  Description:
+ loads array of size SPI_TX_BUFFER_SIZE into txBuffer 
+ 
+  Precondition:
+    None.
+
+  Parameters:
+    None
+
+  Returns:
+    None.
+
+  Remarks:
+    None.
+ */
+
+void prepareTxData(void){
+
+    //load bus voltage into transmit buffer
+    txBuffer[0] = (uint8_t)(measureInputs.dcBusVoltage >> 8);
+    txBuffer[1] = (uint8_t)(measureInputs.dcBusVoltage);
+        
+    //load bus current into transmit buffer
+    txBuffer[2] = (uint8_t)(measureInputs.current.Ibus >> 8);
+    txBuffer[3] = (uint8_t)(measureInputs.current.Ibus);
+        
+    //load system state into transmit buffer
+    txBuffer[4] = (uint8_t)system.state;
+    
 }
 
 
