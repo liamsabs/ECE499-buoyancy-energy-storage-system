@@ -110,6 +110,8 @@ void SPI1_Initialize (void)
     /*SPI1 Status Register Setting*/ 
     SPI1STATLbits.SPIROV = 0; // No Receive Overflow has occurred
     
+    SPI1IMSKLbits.SPIRBFEN = 1; //sets interrupt to trigger on SPI recieve buffer full
+    
     /*Enabling the Interrupt Module*/
     _SPI1IF = 0; // Clear Interrupt Flag
     SPI1CON1bits.SPIEN = 1; //enable SPI module

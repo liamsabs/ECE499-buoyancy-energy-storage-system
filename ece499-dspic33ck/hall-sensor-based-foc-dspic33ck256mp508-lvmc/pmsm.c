@@ -37,6 +37,7 @@
 #include <xc.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 #include <libq.h>      
 #include "motor_control_noinline.h"
@@ -59,6 +60,9 @@
 
 
 volatile UGF_T uGF;
+
+
+
 
 CTRL_PARM_T ctrlParm;
 MOTOR_STARTUP_DATA_T motorStartUpData;
@@ -87,6 +91,7 @@ MCAPP_MEASURE_T measureInputs;
 #define SENSE_SAMPLING_PERIOD_SEC 0.1
 
 /* SPI Counter */
+uint32_t SPICounter; 
 #define SENSOR_SAMPLE_RATE_REVS (uint32_t)(PWMFREQUENCY_HZ * SENSE_SAMPLING_PERIOD_SEC)
 
 #define SPI_RX_BUFFER_SIZE  1
@@ -146,7 +151,7 @@ void prepareTxData(void);
 
 int main ( void )
 {
-    
+    SPICounter=0;
     InitOscillator();
     SetupGPIOPorts();
     /* Turn on LED2 to indicate the device is programmed */
@@ -173,6 +178,7 @@ int main ( void )
         {
             DiagnosticsStepMain();
             BoardService();
+            printf("SPI: Buffer State: %d",(int)SPI1STATLbits.SPIRBF);
                      
         }
 
@@ -494,6 +500,31 @@ void __attribute__((interrupt, no_auto_psv)) HAL_MC1HallStateChangeInterrupt ()
     mcappData.hallCorrectionFactor = mcappData.hallThetaError >> HALL_CORRECTION_DIVISOR;
     mcappData.hallCorrectionCounter = HALL_CORRECTION_STEPS;
     
+    if(system.state == STORING){
+        
+        if(++system.position >= STORING_DONE_POS){ //increments then checks if end of storing
+            
+            system.state = STORED; //set state to stored
+            uGF.bits.MotorState=0b00;
+            /*TODO: Engage Locking Mechanism*/
+            prepareTxData(); //acquire sensor and system state data
+            LATEbits.LATE1 = 1; //set PORTE1 high (MicroBus_A_AN)
+            
+            
+        } 
+        
+    }else if (system.state == GENERATING){
+        
+        if(--system.position <= GEN_DONE_POS){ //decrements then checks if end of generating
+            
+            system.state = IDLE; // set state to IDLE
+            uGF.bits.MotorState=0b00;
+            ResetParmeters(); // stop generating
+            prepareTxData(); //acquire sensor and system state data
+            LATEbits.LATE1 = 1; //set PORTE1 high (MicroBus_A_AN)
+            
+        }
+    }
     HAL_MC1HallStateChangeInterruptFlagClear();
 }
 // *****************************************************************************
@@ -674,39 +705,12 @@ void __attribute__((__interrupt__,no_auto_psv)) _ADCInterrupt()
     DiagnosticsStepIsr();
     
     // State and message processing logic
-    if(system.state == STORING){
-        
-        if(++system.position >= STORING_DONE_POS){ //increments then checks if end of storing
-            
-            system.state = STORED; //set state to stored
-            ResetParmeters(); // stop motoring
-            /*TODO: Engage Locking Mechanism*/
-            prepareTxData(); //acquire sensor and system state data
-            LATEbits.LATE1 = 1; //set PORTE1 high (MicroBus_A_AN)
-            
-        }else if( system.position % SENSOR_SAMPLE_RATE_REVS == 0 ){ //if multiple of sample rate, send sensor data req to master 
-        
-            prepareTxData(); //acquire sensor and system state data
-            LATEbits.LATE1 = 1; //set PORTE1 high (MicroBus_A_AN)
-  
-        }
-        
-    }else if (system.state == GENERATING){
-        
-        if(--system.position <= GEN_DONE_POS){ //decrements then checks if end of generating
-            
-            system.state = IDLE; // set state to IDLE
-            ResetParmeters(); // stop generating
-            prepareTxData(); //acquire sensor and system state data
-            LATEbits.LATE1 = 1; //set PORTE1 high (MicroBus_A_AN)
-            
-        }else if( system.position % SENSOR_SAMPLE_RATE_REVS == 0 ){ //if multiple of sample rate, send sensor data req to master 
-        
-            prepareTxData(); //acquire sensor and system state data
-            LATEbits.LATE1 = 1; //set PORTE1 high (MicroBus_A_AN)
-  
-        }
+    if(++SPICounter>=SENSOR_SAMPLE_RATE_REVS){
+        SPICounter=0;
+        prepareTxData(); //acquire sensor and system state data
+        LATEbits.LATE1 = 1; //set PORTE1 high (MicroBus_A_AN)
     }
+
 
 
     /* Read ADC Buffet to Clear Flag */

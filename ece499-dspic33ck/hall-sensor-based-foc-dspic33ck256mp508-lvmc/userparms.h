@@ -68,7 +68,7 @@ controllers, tuning mode will disable the speed PI controller */
     
 /* Update the following for total number of Revolutions until the system reaches the bottom*/
 #define TOTAL_REVS 30000
-#define STORING_DONE_POS TOTAL_REVS
+#define STORING_DONE_POS TOTAL_REVS*30
 
 /* Storing Done Threshold for the system to know it should stop generating*/
 #define GEN_DONE_POS 50
