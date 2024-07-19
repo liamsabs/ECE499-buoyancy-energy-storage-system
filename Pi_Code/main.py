@@ -12,19 +12,21 @@ _thread.start_new_thread(control.start_cntrl_pnl())
 ################################################## SPI RECIEVER CODE ##################################################
 #######################################################################################################################
 
-recieved_data_FIFO = []
+recieved_data_LIFO = []
 
 spi = spidev.SpiDev()
 spi.open(0,0)
 spi.max_speed_hz = 100000
 
 def spiRecieve17Bytes_forever():
+    global recieved_data_LIFO
     while(True):
-        recieved_data = spi.xfer2([0x00] * 17)
-        if recieved_data_FIFO != [0 for i in range(17)]:
-            recieved_data_FIFO.append(recieved_data)
+        recieved_data = spi.xfer2([0x04] + [0x00] * 5)      
+        if recieved_data != [0 for i in range(6)]:
+            recieved_data_LIFO.append(recieved_data)
+        time.sleep(0.05)
 
-_thread.start_new_thread(spiRecieve17Bytes_forever())
+_thread.start_new_thread(spiRecieve17Bytes_forever, ())
 
 #######################################################################################################################
 ################################################ DISPLAY RECIEVED DATA ################################################
@@ -34,9 +36,11 @@ _thread.start_new_thread(spiRecieve17Bytes_forever())
 # eventually it will print it on the screen of the dashboard
 
 while(True):
-    if len(recieved_data_FIFO) > 0:
-        first_in_queue = recieved_data_FIFO.pop(0)
-        print(first_in_queue)
+    if len(recieved_data_LIFO) > 0:
+        last_in_queue = recieved_data_LIFO.pop(-1)
+        print(last_in_queue)
+        recieved_data_LIFO = []
     else:
         print("queue of recieved data is empty")
     time.sleep(1)
+
