@@ -90,11 +90,11 @@ void SPI1_Initialize (void)
     SPI1BUFL = 0;
     
     /*Clearing Interrupts for Configuration*/
-    _SPI1IF = 0; // Clear Interrupt Flag
-    _SPI1IE = 0; // Disable Interrupt
+    IFS0bits.SPI1RXIF = 0; // Clear Interrupt Flag
+    IEC0bits.SPI1RXIE = 0; // Disable Interrupt
     
     /*Set SPI Interrupt Priority*/
-    _SPI1IP = 1;
+    IPC31bits.SPI1IP = 1;
     
     /* SPI1CON1 Register Settings*/
     SPI1CON1bits.DISSCK = 0; // Internal Serial Clock is enabled
@@ -105,17 +105,18 @@ void SPI1_Initialize (void)
     SPI1CON1bits.CKP = 0; // Idle state for clock is a low level; active
     SPI1CON1bits.MSTEN = 0; // Master mode disabled
     SPI1CON1bits.SSEN = 1; //Set Slave select pin to active for slave mode
-    SPI1CON1bits.SPIEN = 1; //
     
     /*SPI1 Status Register Setting*/ 
     SPI1STATLbits.SPIROV = 0; // No Receive Overflow has occurred
     
+    /*SPI1 Interrupt Mask Register*/
     SPI1IMSKLbits.SPIRBFEN = 1; //sets interrupt to trigger on SPI recieve buffer full
     
     /*Enabling the Interrupt Module*/
-    _SPI1IF = 0; // Clear Interrupt Flag
+    IFS0bits.SPI1RXIF = 0; // Clear Interrupt Flag
     SPI1CON1bits.SPIEN = 1; //enable SPI module
-    _SPI1IE = 1; // Disable Interrupt
+    IEC0bits.SPI1RXIE = 1; //enable SPI1 RX interrupt
+    
 }
 
 void SPI1_Deinitialize (void)

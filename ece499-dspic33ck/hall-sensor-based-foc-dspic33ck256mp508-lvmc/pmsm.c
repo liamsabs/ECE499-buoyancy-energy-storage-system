@@ -100,6 +100,7 @@ uint32_t SPICounter;
 
 volatile uint8_t rxBuffer;
 volatile uint8_t txBuffer[SPI_TX_BUFFER_SIZE];
+volatile uint8_t txBufferDummy[SPI_TX_BUFFER_SIZE] = {0x04, 0x04, 0x04, 0x04, 0x04};
 
 System system = {.state = IDLE, .unpausedState = IDLE, .position = 0};
 
@@ -718,7 +719,7 @@ void __attribute__((__interrupt__,no_auto_psv)) _ADCInterrupt()
     ClearADCIF();   
 }
 
-void __attribute__((interrupt, no_auto_psv)) _SPI1Interrupt(void)
+void __attribute__((interrupt, no_auto_psv)) _SPI1RXInterrupt(void)
 {
     // Check if SPI receive buffer is full
     if (SPI1STATLbits.SPIRBF) {
@@ -824,7 +825,7 @@ void __attribute__((interrupt, no_auto_psv)) _SPI1Interrupt(void)
         } else if (rxBuffer == 0x04) { // sensor data request
             for (int i = 0; i < SPI_TX_BUFFER_SIZE; i++) {
                 /* Logic for Sending Each Byte */
-                SPI1BUFL = txBuffer[i];  // Transmit each byte
+                SPI1BUFL = txBufferDummy[i];  // Transmit each byte
                 while (SPI1STATLbits.SPITBF);  // Wait for transmit buffer to be empty
                 IFS0bits.SPI1TXIF = 0;  // Clear SPI1 transmit interrupt flag
             }

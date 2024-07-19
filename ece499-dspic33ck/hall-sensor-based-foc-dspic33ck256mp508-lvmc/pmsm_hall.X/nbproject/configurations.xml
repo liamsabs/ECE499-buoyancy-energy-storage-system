@@ -40,7 +40,6 @@
       <itemPath>../general.h</itemPath>
       <itemPath>../motor_control_noinline.h</itemPath>
       <itemPath>../userparms.h</itemPath>
-      <itemPath>../utilities.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
@@ -87,7 +86,7 @@
         <platformTool>pkob4hybrid</platformTool>
         <languageToolchain>XC16</languageToolchain>
         <languageToolchainVersion>2.10</languageToolchainVersion>
-        <platform>4</platform>
+        <platform>3</platform>
       </toolsSet>
       <packs>
         <pack name="dsPIC33CK-MP_DFP" vendor="Microchip" version="1.9.228"/>
