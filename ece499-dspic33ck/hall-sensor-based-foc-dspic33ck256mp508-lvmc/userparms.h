@@ -66,6 +66,12 @@ controllers, tuning mode will disable the speed PI controller */
 /********************  support xls file definitions begin *********************/
 /* The following values are given in the xls attached file */
     
+/* Update the following for total number of Revolutions until the system reaches the bottom*/
+#define TOTAL_REVS 30000
+#define STORING_DONE_POS TOTAL_REVS*30
+
+/* Storing Done Threshold for the system to know it should stop generating*/
+#define GEN_DONE_POS 50
     
 /*Update the following motor tuning parameters while using LVMC build configuration*/
     
