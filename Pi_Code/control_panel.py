@@ -4,6 +4,9 @@ from tkinter import ttk
 class cntrl_pnl:
 
     def __init__(self, spi):
+        
+        self.spi_request_buffer = []
+        self.spi_request_buffer_flag = False
 
         self.spi = spi
 
@@ -29,7 +32,7 @@ class cntrl_pnl:
 
         self.num_disp_fr = ttk.Frame(self.display_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', width=1000, height=1000)
 
-        self.screen_reset_button = ttk.Button(self.num_disp_fr, text='reset output', command=self.update_display)
+        self.screen_reset_button = ttk.Button(self.num_disp_fr, text='reset output', command=self.start_cntrl_pnl)
         self.num_disp_obj = Text(self.num_disp_fr, wrap='word', padx=10, pady=10, width=30)
 
         self.W_generating_fr = ttk.Frame(self.display_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', height=100)
@@ -116,22 +119,44 @@ class cntrl_pnl:
         self.root.update()
         #self.root.after_idle(self.update_display)
         self.num_disp_obj.delete(1.0, END)
-        self.num_disp_obj.insert(1.0, "Group 21 - Bouyancy Energy Storage System (BESS)")
+        self.num_disp_obj.insert(1.0, "Group 21 - Bouyancy Energy Storage System (BESS)\n")
         self.root.mainloop()
 
     def update_display(self, values, *args):
-        self.num_disp_obj.insert("end -1 chars", str(values))
-        print("updated display")
+        
+        self.num_disp_obj.insert("end", str(values) + "\n")
+        self.num_disp_obj.see("end")
+        
+        self.W_generating_disp_obj.delete(1.0, END)
+        self.W_using_disp_obj.delete(1.0, END)
+        self.V_generating_disp_obj.delete(1.0, END)
+        self.V_using_disp_obj.delete(1.0, END)
+        self.A_generating_disp_obj.delete(1.0, END)
+        self.A_using_disp_obj.delete(1.0, END)
+        
+        self.W_generating_disp_obj.insert("end", str(values[0]))
+        self.W_using_disp_obj.insert("end", str(values[1]))
+        self.V_generating_disp_obj.insert("end", str(values[2]))
+        self.V_using_disp_obj.insert("end", str(values[3]))
+        self.A_generating_disp_obj.insert("end", str(values[4]))
+        self.A_using_disp_obj.insert("end", str(values[5]))
+        #print("updated display")
         #self.root.after(1000, self.update_display)
 
     def pause_btn_handler(self):
         print("handling pause button")
-        self.spi.xfer2([0x03])
+        self.spi_request_buffer = [0x03] + [0x00] * 5
+        self.spi_request_buffer_flag = True
+        #self.spi.xfer2([0x03] + [0x00] * 5)
 
     def generate_btn_handler(self):
         print("handling generate button")
-        self.spi.xfer2([0x02])
+        self.spi_request_buffer = [0x02] + [0x00] * 5
+        self.spi_request_buffer_flag = True
+        #self.spi.xfer2([0x02] + [0x00] * 5)
 
     def store_btn_handler(self):
         print("handling store button")
-        self.spi.xfer2([0x01])
+        self.spi_request_buffer = [0x01] + [0x00] * 5
+        self.spi_request_buffer_flag = True
+        #self.spi.xfer2([0x01] + [0x00] * 5)
