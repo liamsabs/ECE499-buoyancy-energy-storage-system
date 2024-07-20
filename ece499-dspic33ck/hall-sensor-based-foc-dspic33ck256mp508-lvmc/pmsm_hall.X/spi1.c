@@ -97,6 +97,8 @@ void SPI1_Initialize (void)
     
     /*Set SPI Interrupt Priority*/
     IPC31bits.SPI1IP = 1;
+    IPC2bits.SPI1RXIP = 1;
+    IPC2bits.SPI1TXIP = 2;
     
     /* SPI1CON1 Register Settings*/
     SPI1CON1bits.DISSCK = 0; // Internal Serial Clock is enabled
@@ -113,7 +115,6 @@ void SPI1_Initialize (void)
     
     /*SPI1 Interrupt Mask Register*/
     SPI1IMSKLbits.SPIRBFEN = 1; //sets interrupt to trigger on SPI recieve buffer full
-    SPI1IMSKLbits.SPITBEN = 1;  //sets interrupt to trigger on SPI transmit buffer empty
     
     /*Enabling the Interrupt Module*/
     IFS0bits.SPI1RXIF = 0; // Clear RX Interrupt Flag
