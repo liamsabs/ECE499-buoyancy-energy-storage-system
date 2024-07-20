@@ -100,7 +100,7 @@ uint32_t SPICounter;
 
 volatile uint8_t rxBuffer;
 volatile uint8_t txBuffer[SPI_TX_BUFFER_SIZE];
-volatile uint8_t txBufferDummy[SPI_TX_BUFFER_SIZE] = {0x04, 0x04, 0x04, 0x04, 0x04};
+volatile uint8_t txBufferDummy[SPI_TX_BUFFER_SIZE] = {0x69, 0xFF, 0x11, 0x26, 0x42};
 
 System system = {.state = IDLE, .unpausedState = IDLE, .position = 0};
 
@@ -721,10 +721,11 @@ void __attribute__((__interrupt__,no_auto_psv)) _ADCInterrupt()
 
 void __attribute__((interrupt, no_auto_psv)) _SPI1RXInterrupt(void)
 {
+      
     // Check if SPI receive buffer is full
-    if (SPI1STATLbits.SPIRBF) {
+    if (SPI1STATLbits.SPIRBF == 0x01) {
         
-        uint8_t rxBuffer = SPI1BUFL;  // Read received data
+        uint16_t rxBuffer = SPI1BUFL;  // Read received data
         
         /* Processing Commands */
         if (rxBuffer == 0x01) { // store command
@@ -827,14 +828,16 @@ void __attribute__((interrupt, no_auto_psv)) _SPI1RXInterrupt(void)
                 /* Logic for Sending Each Byte */
                 SPI1BUFL = txBufferDummy[i];  // Transmit each byte
                 while (SPI1STATLbits.SPITBF);  // Wait for transmit buffer to be empty
-                IFS0bits.SPI1TXIF = 0;  // Clear SPI1 transmit interrupt flag
             }
             LATEbits.LATE1 = 0; //clear PORTE1 (MicroBus_A_AN) to trigger future interrupts on master
         }   
     }
     
+    SPI1BUFL = 0;
+    SPI1BUFH = 0;
+    
     // Clear SPI interrupt flag
-    IFS7bits.SPI1IF = 0;    // Clear SPI1 interrupt flag
+    IFS0bits.SPI1RXIF = 0;    // Clear SPI1 interrupt flag  
 }
 // *****************************************************************************
 /* Function:

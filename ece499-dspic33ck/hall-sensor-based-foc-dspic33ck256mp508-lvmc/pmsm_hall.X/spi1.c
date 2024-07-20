@@ -101,7 +101,7 @@ void SPI1_Initialize (void)
     SPI1CON1bits.DISSDO = 0; // SDOx pin is controlled by the module
     SPI1CON1bits.MODE16 = 0; // Communication is byte-wide (8 bits)
     SPI1CON1bits.SMP = 0; // Input data is sampled at the middle of data output time.
-    SPI1CON1bits.CKE = 0; // Serial output data changes on transition from Idle clock state to active clock state
+    SPI1CON1bits.CKE = 1; // Serial output data changes on transition from Idle clock state to active clock state
     SPI1CON1bits.CKP = 0; // Idle state for clock is a low level; active
     SPI1CON1bits.MSTEN = 0; // Master mode disabled
     SPI1CON1bits.SSEN = 1; //Set Slave select pin to active for slave mode
