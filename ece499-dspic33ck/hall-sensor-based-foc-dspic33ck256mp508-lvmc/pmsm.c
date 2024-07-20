@@ -826,7 +826,8 @@ void __attribute__((interrupt, no_auto_psv)) _SPI1RXInterrupt(void)
         } else if (rxBuffer == 0x04) { // sensor data request
             /* If this is a sensor data request*/
             while(1U == SPI1STATLbits.SPITBF); //wait to make sure SPI transfer buffer is not full
-            SPI1BUFL = txCounter++;  // Transmit first byte then increment
+            SPI1BUFL = txBufferDummy[txCounter];  // Transmit first byte then increment
+            txCounter++;
             //IEC0bits.SPI1RXIE = 0; //disable SPI1 Recieve Interrupt
             SPI1IMSKLbits.SPITBEN = 1;  //sets interrupt to trigger on SPI transmit buffer empty
             IEC0bits.SPI1TXIE = 1; //enable SPI1 Transmit Interrupt
@@ -847,14 +848,14 @@ void __attribute__((interrupt, no_auto_psv)) _SPI1TXInterrupt(void)
     if (txCounter < SPI_TX_BUFFER_SIZE) {
         while (SPI1STATLbits.SPITBF);
         //SPI1BUFL = txBufferDummy[txCounter++];  // Transmit byte then increment
-        SPI1BUFL = txCounter;
+        SPI1BUFL = txBufferDummy[txCounter];
         
         txCounter++;
         if (txCounter >= SPI_TX_BUFFER_SIZE) { // If last byte of response sent
             IEC0bits.SPI1TXIE = 0; // Disable SPI1 Transmit Interrupt
             SPI1IMSKLbits.SPITBEN = 0;  //disable interrupt to trigger on SPI transmit buffer empty
-            IFS0bits.SPI1RXIF = 0; // clear recieve interrupt flag
             IEC0bits.SPI1RXIE = 1; // Enable SPI1 Receive Interrupt
+            IFS0bits.SPI1RXIF = 0; // clear recieve interrupt flag
             txCounter = 0; // Reset txCounter for next transmission
         }
     }
