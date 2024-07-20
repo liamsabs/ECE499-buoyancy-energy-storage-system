@@ -100,7 +100,8 @@ uint32_t SPICounter;
 
 volatile uint8_t rxBuffer;
 volatile uint8_t txBuffer[SPI_TX_BUFFER_SIZE];
-volatile uint8_t txBufferDummy[SPI_TX_BUFFER_SIZE] = {0x69, 0xFF, 0x11, 0x26, 0x42};
+volatile uint8_t txBufferDummy[SPI_TX_BUFFER_SIZE] = {0x88, 0x66, 0x22, 0x26, 0x73};
+volatile uint8_t txCounter = 0;
 
 System system = {.state = IDLE, .unpausedState = IDLE, .position = 0};
 
@@ -179,7 +180,6 @@ int main ( void )
         {
             DiagnosticsStepMain();
             BoardService();
-            printf("SPI: Buffer State: %d",(int)SPI1STATLbits.SPIRBF);
                      
         }
 
@@ -824,21 +824,36 @@ void __attribute__((interrupt, no_auto_psv)) _SPI1RXInterrupt(void)
                 }
             }   
         } else if (rxBuffer == 0x04) { // sensor data request
-            for (int i = 0; i < SPI_TX_BUFFER_SIZE; i++) {
-                /* Logic for Sending Each Byte */
-                SPI1BUFL = txBufferDummy[i];  // Transmit each byte
-                while (SPI1STATLbits.SPITBF);  // Wait for transmit buffer to be empty
-            }
-            LATEbits.LATE1 = 0; //clear PORTE1 (MicroBus_A_AN) to trigger future interrupts on master
+            /* If this is a sensor data request*/
+            while(1U == SPI1STATLbits.SPITBF); //wait to make sure SPI transfer buffer is not full
+            SPI1BUFL = txBufferDummy[txCounter++];  // Transmit first byte then increment
+            IEC0bits.SPI1RXIE = 0; //disable SPI1 Recieve Interrupt 
+            IFS0bits.SPI1TXIF = 0; //clear TX interrupt flag
+            IEC0bits.SPI1TXIE = 1; //enable SPI1 Transmit Interrupt       
+            //LATEbits.LATE1 = 0; //clear PORTE1 (MicroBus_A_AN) to trigger future interrupts on master
         }   
     }
-    
-    SPI1BUFL = 0;
-    SPI1BUFH = 0;
-    
     // Clear SPI interrupt flag
     IFS0bits.SPI1RXIF = 0;    // Clear SPI1 interrupt flag  
 }
+
+void __attribute__((interrupt, no_auto_psv)) _SPI1TXInterrupt(void)
+{
+    if (txCounter < SPI_TX_BUFFER_SIZE) {
+        while (SPI1STATLbits.SPITBF);
+        SPI1BUFL = txBufferDummy[txCounter++];  // Transmit byte then increment
+
+        if (txCounter >= SPI_TX_BUFFER_SIZE) { // If last byte of response sent
+            IEC0bits.SPI1TXIE = 0; // Disable SPI1 Transmit Interrupt
+            IFS0bits.SPI1RXIF = 0; // clear recieve interrupt flag
+            IEC0bits.SPI1RXIE = 1; // Enable SPI1 Receive Interrupt
+            txCounter = 0; // Reset txCounter for next transmission
+        }
+    }
+
+    IFS0bits.SPI1TXIF = 0; // Clear TX interrupt flag
+}
+
 // *****************************************************************************
 /* Function:
  prepareTxData(void)

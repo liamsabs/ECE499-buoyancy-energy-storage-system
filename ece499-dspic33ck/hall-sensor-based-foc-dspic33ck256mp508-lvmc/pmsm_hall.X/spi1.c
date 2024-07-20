@@ -90,8 +90,10 @@ void SPI1_Initialize (void)
     SPI1BUFL = 0;
     
     /*Clearing Interrupts for Configuration*/
-    IFS0bits.SPI1RXIF = 0; // Clear Interrupt Flag
-    IEC0bits.SPI1RXIE = 0; // Disable Interrupt
+    IFS0bits.SPI1RXIF = 0; // Clear RX Interrupt Flag
+    IFS0bits.SPI1TXIF = 0; //clear TX Interrupt Flag
+    IEC0bits.SPI1RXIE = 0; // Disable RX Interrupt
+    IEC0bits.SPI1TXIE = 0; // Disable TX Interrupt
     
     /*Set SPI Interrupt Priority*/
     IPC31bits.SPI1IP = 1;
@@ -111,11 +113,13 @@ void SPI1_Initialize (void)
     
     /*SPI1 Interrupt Mask Register*/
     SPI1IMSKLbits.SPIRBFEN = 1; //sets interrupt to trigger on SPI recieve buffer full
+    SPI1IMSKLbits.SPITBEN = 1;  //sets interrupt to trigger on SPI transmit buffer empty
     
     /*Enabling the Interrupt Module*/
-    IFS0bits.SPI1RXIF = 0; // Clear Interrupt Flag
-    SPI1CON1bits.SPIEN = 1; //enable SPI module
+    IFS0bits.SPI1RXIF = 0; // Clear RX Interrupt Flag
+    IFS0bits.SPI1TXIF = 0; // Clear TX Interrupt Flag 
     IEC0bits.SPI1RXIE = 1; //enable SPI1 RX interrupt
+    SPI1CON1bits.SPIEN = 1; //enable SPI module
     
 }
 
