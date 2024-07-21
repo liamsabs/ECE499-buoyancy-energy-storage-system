@@ -88,10 +88,11 @@ volatile uint16_t adcDataBuffer;
 MCAPP_MEASURE_T measureInputs;
 
 /*SPI calling frequency*/
-#define SENSE_SAMPLING_PERIOD_SEC 0.5
+#define SENSE_SAMPLING_PERIOD_SEC 0.1
 
 /* SPI Counter */
 uint8_t SPIFlag;
+uint8_t RXFlag;
 uint32_t SPICounter; 
 #define SENSOR_SAMPLE_RATE_REVS (uint32_t)(PWMFREQUENCY_HZ * SENSE_SAMPLING_PERIOD_SEC)
 
@@ -127,6 +128,7 @@ void DoControl(void);
 void CalculateParkAngle(void);
 void ResetParmeters(void);
 void prepareTxData(void);
+void UpdateState(void);
 
 // *****************************************************************************
 /* Function:
@@ -156,6 +158,7 @@ int main ( void )
 {
     SPICounter=0;
     SPIFlag=0;
+    RXFlag=0;
     InitOscillator();
     SetupGPIOPorts();
     /* Turn on LED2 to indicate the device is programmed */
@@ -181,13 +184,17 @@ int main ( void )
         while(1)
         {
             /*Check if the SPI flag is set if it is request data*/
-            LATEbits.LATE1=1;
-           /* if(SPIFlag){
+            //LATEbits.LATE1=1;
+           if(SPIFlag){
                 SPIFlag=0;
                 prepareTxData(); //acquire sensor and system state data
                 LATEbits.LATE1 = 1; //set PORTE1 high (MicroBus_A_AN)
             }
-            * */
+           if(RXFlag){
+               UpdateState();
+               RXFlag=0;
+           }
+            
             /*Button logic for onboard*/
             if (IsPressed_Button1())
             {
@@ -745,12 +752,11 @@ void __attribute__((__interrupt__,no_auto_psv)) _ADCInterrupt()
     DiagnosticsStepIsr();
     
     // State and message processing logic
-    /*if(++SPICounter>=SENSOR_SAMPLE_RATE_REVS){
+    if(++SPICounter>=SENSOR_SAMPLE_RATE_REVS){
         
         SPIFlag = 1;
         SPICounter=0;
     }
-     * */
 
 
 
@@ -761,125 +767,27 @@ void __attribute__((__interrupt__,no_auto_psv)) _ADCInterrupt()
 
 void __attribute__((interrupt, no_auto_psv)) _SPI1RXInterrupt(void)
 {
-      
+    
     // Check if SPI receive buffer is full
     if (SPI1STATLbits.SPIRBF == 0x01) {
         
         rxBuffer = SPI1BUFL;  // Read received data
-        
-        /* Processing Commands */
-        if (rxBuffer == 0x01) { // store command
-            
-            /* State Processing Logic */
-            if (system.state == IDLE || system.state == GENERATING) {
-                
-                system.state = STORING; // set state to storing 
-                
-                /* Begin Motor Spinning */
-                ResetParmeters();
-                uGF.bits.MotorState = 0b01;
-                EnablePWMOutputsInverterAMotor();
-                
-            } else if (system.state == PAUSED) {
-                
-                if (system.unpausedState == IDLE || system.unpausedState == STORING || system.unpausedState == GENERATING) {
-                    
-                    system.state = STORING; // set state to storing 
-
-                    /* Begin Motor Spinning */
-                    ResetParmeters();
-                    uGF.bits.MotorState = 0b01;
-                    EnablePWMOutputsInverterAMotor();
-                    if (system.unpausedState != IDLE) {
-                        /* TODO: Unlock System */
-                    }
-                
-                } else if (system.unpausedState == STORED) {
-                    system.state = STORED; // Motor has no place to go, set back to stored
-                }
-            } 
-               
-        } else if (rxBuffer == 0x02) { // generate 
-            
-            /* State Processing Logic */
-            if (system.state == STORING || system.state == STORED) {
-                
-                system.state = GENERATING; // set state to generating 
-                
-                /* Begin Motor Spinning */
-                ResetParmeters();
-                uGF.bits.MotorState = 0b10;
-                EnablePWMOutputsInverterAGenerator();
-                
-                SPI1BUFL = 0;
-                
-            } else if (system.state == PAUSED) {
-                
-                if (system.unpausedState == IDLE) {
-                    
-                    system.state = IDLE;
-                    
-                } else {
-                    system.state = GENERATING; // set state to generating 
-
-                    /* Begin Motor Spinning */
-                    ResetParmeters();
-                    uGF.bits.MotorState = 0b10;
-                    EnablePWMOutputsInverterAGenerator();
-                }
-                
-                
-            }   
-            
-        } else if (rxBuffer == 0x03) { // pause
-            
-            /* State Processing Logic */
-            if (system.state != PAUSED) { // if IDLE or STORED, simply store state and pause
-                
-                if (system.state == STORING || system.state == GENERATING) {
-                    ResetParmeters(); // Stop the motor, reset motor parameters
-                    /* TODO: Engage Locking Mechanism */
-                }
-                system.unpausedState = system.state;
-                system.state = PAUSED; 
-                 
-            } else {
-                if (system.unpausedState == STORING) {
-                    
-                    system.state = STORING; // set back to storing
-                    
-                    /* Begin Motor Spinning */
-                    ResetParmeters();
-                    uGF.bits.MotorState = 0b01;
-                    EnablePWMOutputsInverterAMotor();
-                    /* TODO: Unlock mechanism */
-                    
-                } else if (system.unpausedState == GENERATING) {
-                    
-                    system.state = GENERATING; // set back to generating
-                    
-                    /* Begin Motor Spinning */
-                    ResetParmeters();
-                    uGF.bits.MotorState = 0b10;
-                    EnablePWMOutputsInverterAGenerator();
-                    /* TODO: Unlock mechanism */
-                } else {
-                    system.state = system.unpausedState;
-                }
-            } 
-            
-            
-            
-        } else if (rxBuffer == 0x04) { // sensor data request
-            /* If this is a sensor data request*/
+        //Check to make sure it's actually requesting a 0 transmit
+        if(rxBuffer!=0){
+        /* If this sends sensor data*/
             while(1U == SPI1STATLbits.SPITBF); //wait to make sure SPI transfer buffer is not full
             SPI1BUFL = txBufferDummy[txCounter];  // Transmit first byte then increment
             txCounter++;
             //IEC0bits.SPI1RXIE = 0; //disable SPI1 Recieve Interrupt
             SPI1IMSKLbits.SPITBEN = 1;  //sets interrupt to trigger on SPI transmit buffer empty
             IEC0bits.SPI1TXIE = 1; //enable SPI1 Transmit Interrupt
-            IFS0bits.SPI1TXIF = 0; //clear TX interrupt flag
-        }   
+            IFS0bits.SPI1TXIF = 0; //clear TX interrupt flag 
+            if(rxBuffer!=0x04){
+                //Prompt that there has been a state change request if it's not just a data request
+                RXFlag = 1;
+            }
+        }
+               
     }
     
     SPI1BUFL = 0;
@@ -907,6 +815,111 @@ void __attribute__((interrupt, no_auto_psv)) _SPI1TXInterrupt(void)
     }
 
     IFS0bits.SPI1TXIF = 0; // Clear TX interrupt flag
+}
+
+void UpdateState(void){
+    /* Processing the commands based on the input */
+    if (rxBuffer == 0x01) { // store command
+
+        /* State Processing Logic */
+        if (system.state == IDLE || system.state == GENERATING) {
+
+            system.state = STORING; // set state to storing 
+
+            /* Begin Motor Spinning */
+            ResetParmeters();
+            uGF.bits.MotorState = 0b01;
+            EnablePWMOutputsInverterAMotor();
+
+        } else if (system.state == PAUSED) {
+
+            if (system.unpausedState == IDLE || system.unpausedState == STORING || system.unpausedState == GENERATING) {
+
+                system.state = STORING; // set state to storing 
+
+                /* Begin Motor Spinning */
+                ResetParmeters();
+                uGF.bits.MotorState = 0b01;
+                EnablePWMOutputsInverterAMotor();
+                if (system.unpausedState != IDLE) {
+                    /* TODO: Unlock System */
+                }
+
+            } else if (system.unpausedState == STORED) {
+                system.state = STORED; // Motor has no place to go, set back to stored
+            }
+        } 
+
+    } else if (rxBuffer == 0x02) { // generate 
+
+        /* State Processing Logic */
+        if (system.state == STORING || system.state == STORED) {
+
+            system.state = GENERATING; // set state to generating 
+
+            /* Begin Motor Spinning */
+            ResetParmeters();
+            uGF.bits.MotorState = 0b10;
+            EnablePWMOutputsInverterAGenerator();
+
+            SPI1BUFL = 0;
+
+        } else if (system.state == PAUSED) {
+
+            if (system.unpausedState == IDLE) {
+
+                system.state = IDLE;
+
+            } else {
+                system.state = GENERATING; // set state to generating 
+
+                /* Begin Motor Spinning */
+                ResetParmeters();
+                uGF.bits.MotorState = 0b10;
+                EnablePWMOutputsInverterAGenerator();
+            }
+
+
+        }   
+
+    } else if (rxBuffer == 0x03) { // pause
+
+        /* State Processing Logic */
+        if (system.state != PAUSED) { // if IDLE or STORED, simply store state and pause
+
+            if (system.state == STORING || system.state == GENERATING) {
+                ResetParmeters(); // Stop the motor, reset motor parameters
+                /* TODO: Engage Locking Mechanism */
+            }
+            system.unpausedState = system.state;
+            system.state = PAUSED; 
+
+        } else {
+            if (system.unpausedState == STORING) {
+
+                system.state = STORING; // set back to storing
+
+                /* Begin Motor Spinning */
+                ResetParmeters();
+                uGF.bits.MotorState = 0b01;
+                EnablePWMOutputsInverterAMotor();
+                /* TODO: Unlock mechanism */
+
+            } else if (system.unpausedState == GENERATING) {
+
+                system.state = GENERATING; // set back to generating
+
+                /* Begin Motor Spinning */
+                ResetParmeters();
+                uGF.bits.MotorState = 0b10;
+                EnablePWMOutputsInverterAGenerator();
+                /* TODO: Unlock mechanism */
+            } else {
+                system.state = system.unpausedState;
+            }
+        }       
+
+    }
 }
 
 // *****************************************************************************
