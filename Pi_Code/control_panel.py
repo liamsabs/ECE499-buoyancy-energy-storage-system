@@ -155,14 +155,14 @@ class cntrl_pnl:
         self.num_disp_obj.see("end")
 
         # set up data for display
-        voltage = ( (values[0] << 8) | values[1] ) / VOLTAGE_ADC_RATIO
-        current = ( (values[2] << 8) | values[3] ) / CURRENT_ADC_RATIO
-        depth = values[5]
-        speed_rpm = (values[6] << 8) | values[7]
+        voltage = ( (values[1] << 8) | values[2] ) / VOLTAGE_ADC_RATIO
+        current = ( (values[3] << 8) | values[4] ) / CURRENT_ADC_RATIO
+        depth = values[6]
+        speed_rpm = (values[7] << 8) | values[8]
         power = voltage * current
 
         self.state = "state error"
-        state_value_recieved = values[4]
+        state_value_recieved = values[5]
         if state_value_recieved == PAUSE_STATE:
             self.state = "paused"
         elif state_value_recieved == GENERATE_STATE:
