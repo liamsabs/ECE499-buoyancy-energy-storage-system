@@ -3,9 +3,11 @@ from tkinter import ttk
 
 RECIEVED_DATA_LENGTH = 8
 
-STORE_STATE = 0x01
+STORING_STATE = 0x01
 GENERATE_STATE = 0x02
 PAUSE_STATE = 0x03
+IDLE_STATE = 0x05
+STORED_STATE = 0x06
 DATA_RQ_STATE = 0x04
 
 VOLTAGE_ADC_RATIO = 114.899
@@ -166,14 +168,19 @@ class cntrl_pnl:
         if state_value_recieved == PAUSE_STATE:
             self.state = "paused"
         elif state_value_recieved == GENERATE_STATE:
-            self.state = "generate"
-        elif state_value_recieved == STORE_STATE:
-            self.state = "store"
+            self.state = "generating"
+            self.prev_state = self.state
+        elif state_value_recieved == STORING_STATE:
+            self.state = "storing"
+            self.prev_state = self.state
+        elif state_value_recieved == STORED_STATE:
+            self.state = "stored"
+        elif state_value_recieved == IDLE_STATE:
+            self.state = "idle"
         elif state_value_recieved == DATA_RQ_STATE:
             pass
-
-        if self.state != "paused":
-            self.prev_state = self.state
+        else:
+            self.state = "state error"
 
         # display values to designated text boxes
         self.W_display.delete(1.0, END)
@@ -207,5 +214,5 @@ class cntrl_pnl:
 
     def store_btn_handler(self):
         print("handling store button")
-        self.set_spi_buffer(STORE_STATE)
+        self.set_spi_buffer(STORING_STATE)
         #self.spi.xfer2([STORE_STATE] + [0x00] * RECIEVED_DATA_LENGTH)
