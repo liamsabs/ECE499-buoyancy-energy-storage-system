@@ -1,12 +1,25 @@
 from tkinter import *
 from tkinter import ttk
 
+RECIEVED_DATA_LENGTH = 8
+
+STORE_STATE = 0x01
+GENERATE_STATE = 0x02
+PAUSE_STATE = 0x03
+DATA_RQ_STATE = 0x04
+
+VOLTAGE_ADC_RATIO = 114.899
+CURRENT_ADC_RATIO = 100.000 # PLACEHOLDER
+
 class cntrl_pnl:
 
     def __init__(self, spi):
 
         self.spi_request_buffer = []
         self.spi_request_buffer_flag = False
+
+        self.state = "state error"
+        self.prev_state = self.state
 
         self.spi = spi
 
@@ -35,29 +48,29 @@ class cntrl_pnl:
         self.screen_reset_button = ttk.Button(self.num_disp_fr, text='reset output', command=self.start_cntrl_pnl)
         self.num_disp_obj = Text(self.num_disp_fr, wrap='word', padx=10, pady=10, width=30)
 
-        self.W_generating_fr = ttk.Frame(self.display_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', height=100)
-        self.W_generating_label = ttk.Label(self.W_generating_fr, padding=(0, 0, 0, 0), text="GENERATING (W):", justify='left', anchor='w', relief='')
-        self.W_generating_disp_obj = Text(self.W_generating_fr, wrap='word', padx=10, pady=10, width=widget_width, height=widget_height)
+        self.W_fr = ttk.Frame(self.display_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', height=100)
+        self.W_label = ttk.Label(self.W_fr, padding=(0, 0, 0, 0), text="POWER (W):", justify='left', anchor='w', relief='')
+        self.W_display = Text(self.W_fr, wrap='word', padx=10, pady=10, width=widget_width, height=widget_height)
 
-        self.W_using_fr = ttk.Frame(self.display_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', height=100)
-        self.W_using_label = ttk.Label(self.W_using_fr, padding=(0, 0, 0, 0), text="USING (W):", justify='left', anchor='w', relief='')
-        self.W_using_disp_obj = Text(self.W_using_fr, wrap='word', padx=10, pady=10, width=widget_width, height=widget_height)
+        self.V_fr = ttk.Frame(self.display_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', height=100)
+        self.V_label = ttk.Label(self.V_fr, padding=(0, 0, 0, 0), text="VOLTAGE (V):", justify='left', anchor='w', relief='')
+        self.V_display = Text(self.V_fr, wrap='word', padx=10, pady=10, width=widget_width, height=widget_height)
 
-        self.V_generating_fr = ttk.Frame(self.display_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', height=100)
-        self.V_generating_label = ttk.Label(self.V_generating_fr, padding=(0, 0, 0, 0), text="GENERATING (V):", justify='left', anchor='w', relief='')
-        self.V_generating_disp_obj = Text(self.V_generating_fr, wrap='word', padx=10, pady=10, width=widget_width, height=widget_height)
+        self.A_fr = ttk.Frame(self.display_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', height=100)
+        self.A_label = ttk.Label(self.A_fr, padding=(0, 0, 0, 0), text="CURRENT (A):", justify='left', anchor='w', relief='')
+        self.A_display = Text(self.A_fr, wrap='word', padx=10, pady=10, width=widget_width, height=widget_height)
 
-        self.V_using_fr = ttk.Frame(self.display_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', height=100)
-        self.V_using_label = ttk.Label(self.V_using_fr, padding=(0, 0, 0, 0), text="USING (V):", justify='left', anchor='w', relief='')
-        self.V_using_disp_obj = Text(self.V_using_fr, wrap='word', padx=10, pady=10, width=widget_width, height=widget_height)
+        self.state_fr = ttk.Frame(self.display_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', height=100)
+        self.state_label = ttk.Label(self.state_fr, padding=(0, 0, 0, 0), text="STATE:", justify='left', anchor='w', relief='')
+        self.state_display = Text(self.state_fr, wrap='word', padx=10, pady=10, width=widget_width, height=widget_height)
 
-        self.A_generating_fr = ttk.Frame(self.display_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', height=100)
-        self.A_generating_label = ttk.Label(self.A_generating_fr, padding=(0, 0, 0, 0), text="GENERATING (A):", justify='left', anchor='w', relief='')
-        self.A_generating_disp_obj = Text(self.A_generating_fr, wrap='word', padx=10, pady=10, width=widget_width, height=widget_height)
+        self.depth_fr = ttk.Frame(self.display_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', height=100)
+        self.depth_label = ttk.Label(self.depth_fr, padding=(0, 0, 0, 0), text="DEPTH (m):", justify='left', anchor='w', relief='')
+        self.depth_display = Text(self.depth_fr, wrap='word', padx=10, pady=10, width=widget_width, height=widget_height)
 
-        self.A_using_fr = ttk.Frame(self.display_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', height=100)
-        self.A_using_label = ttk.Label(self.A_using_fr, padding=(0, 0, 0, 0), text="USING (A):", justify='left', anchor='w', relief='')
-        self.A_using_disp_obj = Text(self.A_using_fr, wrap='word', padx=10, pady=10, width=widget_width, height=widget_height)
+        self.speed_fr = ttk.Frame(self.display_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', height=100)
+        self.speed_label = ttk.Label(self.speed_fr, padding=(0, 0, 0, 0), text="SPEED (RPM):", justify='left', anchor='w', relief='')
+        self.speed_display = Text(self.speed_fr, wrap='word', padx=10, pady=10, width=widget_width, height=widget_height)
 
         # GRID
 
@@ -81,35 +94,35 @@ class cntrl_pnl:
         self.num_disp_obj.grid(column=0, row=1, sticky=(W, N, E, S))
         self.num_disp_fr.rowconfigure(1, weight=1)
 
-        self.W_generating_fr.grid(column=1, row=0, sticky=(E))
-        self.W_generating_label.grid(column=0, row=0, sticky=(W))
-        self.W_generating_disp_obj.grid(column=0, row=1, sticky=(W, N, E, S))
-        self.W_generating_fr.rowconfigure(1, weight=1)
+        self.W_fr.grid(column=1, row=0, sticky=(E))
+        self.W_label.grid(column=0, row=0, sticky=(W))
+        self.W_display.grid(column=0, row=1, sticky=(W, N, E, S))
+        self.W_fr.rowconfigure(1, weight=1)
 
-        self.W_using_fr.grid(column=1, row=1, sticky=(E))
-        self.W_using_label.grid(column=0, row=0, sticky=(W))
-        self.W_using_disp_obj.grid(column=0, row=1, sticky=(W, N, E, S))
-        self.W_using_fr.rowconfigure(1, weight=1)
+        self.V_fr.grid(column=1, row=1, sticky=(E))
+        self.V_label.grid(column=0, row=0, sticky=(W))
+        self.V_display.grid(column=0, row=1, sticky=(W, N, E, S))
+        self.V_fr.rowconfigure(1, weight=1)
 
-        self.V_generating_fr.grid(column=1, row=2, sticky=(E))
-        self.V_generating_label.grid(column=0, row=0, sticky=(W))
-        self.V_generating_disp_obj.grid(column=0, row=1, sticky=(W, N, E, S))
-        self.V_generating_fr.rowconfigure(1, weight=1)
+        self.A_fr.grid(column=1, row=2, sticky=(E))
+        self.A_label.grid(column=0, row=0, sticky=(W))
+        self.A_display.grid(column=0, row=1, sticky=(W, N, E, S))
+        self.A_fr.rowconfigure(1, weight=1)
 
-        self.V_using_fr.grid(column=1, row=3, sticky=(E))
-        self.V_using_label.grid(column=0, row=0, sticky=(W))
-        self.V_using_disp_obj.grid(column=0, row=1, sticky=(W, N, E, S))
-        self.V_using_fr.rowconfigure(1, weight=1)
+        self.state_fr.grid(column=1, row=3, sticky=(E))
+        self.state_label.grid(column=0, row=0, sticky=(W))
+        self.state_display.grid(column=0, row=1, sticky=(W, N, E, S))
+        self.state_fr.rowconfigure(1, weight=1)
 
-        self.A_generating_fr.grid(column=1, row=4, sticky=(E))
-        self.A_generating_label.grid(column=0, row=0, sticky=(W))
-        self.A_generating_disp_obj.grid(column=0, row=1, sticky=(W, N, E, S))
-        self.A_generating_fr.rowconfigure(1, weight=1)
+        self.depth_fr.grid(column=1, row=4, sticky=(E))
+        self.depth_label.grid(column=0, row=0, sticky=(W))
+        self.depth_display.grid(column=0, row=1, sticky=(W, N, E, S))
+        self.depth_fr.rowconfigure(1, weight=1)
 
-        self.A_using_fr.grid(column=1, row=5, sticky=(E))
-        self.A_using_label.grid(column=0, row=0, sticky=(W))
-        self.A_using_disp_obj.grid(column=0, row=1, sticky=(W, N, E, S))
-        self.A_using_fr.rowconfigure(1, weight=1)
+        self.speed_fr.grid(column=1, row=5, sticky=(E))
+        self.speed_label.grid(column=0, row=0, sticky=(W))
+        self.speed_display.grid(column=0, row=1, sticky=(W, N, E, S))
+        self.speed_fr.rowconfigure(1, weight=1)
 
         self.num_disp_fr.columnconfigure(0, weight=1)
         self.num_disp_fr.rowconfigure(1, weight=1)
@@ -123,7 +136,7 @@ class cntrl_pnl:
         self.root.mainloop()
 
     def set_spi_buffer(self, value):
-        self.spi_request_buffer = [value] + [0x00] * 5
+        self.spi_request_buffer = [value] + [0x00] * RECIEVED_DATA_LENGTH
         self.spi_request_buffer_flag = True
 
     def new_command_available(self):
@@ -137,36 +150,60 @@ class cntrl_pnl:
 
     def update_display(self, values, *args):
 
+        # handle debug console
         self.num_disp_obj.insert("end", str(values) + "\n")
         self.num_disp_obj.see("end")
 
-        self.W_generating_disp_obj.delete(1.0, END)
-        self.W_using_disp_obj.delete(1.0, END)
-        self.V_generating_disp_obj.delete(1.0, END)
-        self.V_using_disp_obj.delete(1.0, END)
-        self.A_generating_disp_obj.delete(1.0, END)
-        self.A_using_disp_obj.delete(1.0, END)
+        # set up data for display
+        voltage = ( (values[0] << 8) | values[1] ) / VOLTAGE_ADC_RATIO
+        current = ( (values[2] << 8) | values[3] ) / CURRENT_ADC_RATIO
+        depth = values[5]
+        speed_rpm = (values[6] << 8) | values[7]
+        power = voltage * current
 
-        self.W_generating_disp_obj.insert("end", str(values[0]))
-        self.W_using_disp_obj.insert("end", str(values[1]))
-        self.V_generating_disp_obj.insert("end", str(values[2]))
-        self.V_using_disp_obj.insert("end", str(values[3]))
-        self.A_generating_disp_obj.insert("end", str(values[4]))
-        self.A_using_disp_obj.insert("end", str(values[5]))
+        self.state = "state error"
+        state_value_recieved = values[4]
+        if state_value_recieved == PAUSE_STATE:
+            self.state = "paused"
+        elif state_value_recieved == GENERATE_STATE:
+            self.state = "generate"
+        elif state_value_recieved == STORE_STATE:
+            self.state = "store"
+
+        if self.state != "paused":
+            self.prev_state = self.state
+
+        # display values to designated text boxes
+        self.W_display.delete(1.0, END)
+        self.V_display.delete(1.0, END)
+        self.A_display.delete(1.0, END)
+        self.state_display.delete(1.0, END)
+        self.depth_display.delete(1.0, END)
+        self.speed_display.delete(1.0, END)
+
+        self.W_display.insert("end", str(power))
+        self.V_display.insert("end", str(voltage))
+        self.A_display.insert("end", str(current))
+        if self.state == "paused":
+            self.state_display.insert("end", self.prev_state + "-")
+        self.state_display.insert("end", str(self.state))
+        self.depth_display.insert("end", str(depth))
+        self.speed_display.insert("end", str(speed_rpm))
+
         #print("updated display")
         #self.root.after(1000, self.update_display)
 
     def pause_btn_handler(self):
         print("handling pause button")
-        self.set_spi_buffer(0x03)
-        #self.spi.xfer2([0x03] + [0x00] * 5)
+        self.set_spi_buffer(PAUSE_STATE)
+        #self.spi.xfer2([PAUSE_STATE] + [0x00] * 5)
 
     def generate_btn_handler(self):
         print("handling generate button")
-        self.set_spi_buffer(0x02)
-        #self.spi.xfer2([0x02] + [0x00] * 5)
+        self.set_spi_buffer(GENERATE_STATE)
+        #self.spi.xfer2([GENERATE_STATE] + [0x00] * 5)
 
     def store_btn_handler(self):
         print("handling store button")
-        self.set_spi_buffer(0x01)
-        #self.spi.xfer2([0x01] + [0x00] * 5)
+        self.set_spi_buffer(STORE_STATE)
+        #self.spi.xfer2([STORE_STATE] + [0x00] * 5)
