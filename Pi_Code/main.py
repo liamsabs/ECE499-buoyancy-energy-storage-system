@@ -18,7 +18,7 @@ def spiRecieve17Bytes_forever():
 	while(True):
 
 		# check if the MC is ready to communicate
-		if (GPIO.input(MC_transmit_ready_pin) == GPIO.LOW):
+		if (GPIO.input(MC_transmit_ready_pin) == GPIO.HIGH):
 
 			# send new command from control panel if available
 			if (control.new_command_available()):
