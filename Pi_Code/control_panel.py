@@ -153,7 +153,13 @@ class cntrl_pnl:
     def update_display(self, values, *args):
 
         # handle debug console
-        self.num_disp_obj.insert("end", str(values) + "\n")
+
+        display_str = "["
+        for v in values:
+            display_str += " " + "{:03d}".format(v)
+        display_str += " ]\n"
+
+        self.num_disp_obj.insert("end", display_str)
         self.num_disp_obj.see("end")
 
         # set up data for display
