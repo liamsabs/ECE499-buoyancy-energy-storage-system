@@ -181,9 +181,9 @@ class cntrl_pnl:
         self.depth_display.delete(1.0, END)
         self.speed_display.delete(1.0, END)
 
-        self.W_display.insert("end", str(power))
-        self.V_display.insert("end", str(voltage))
-        self.A_display.insert("end", str(current))
+        self.W_display.insert("end", "{:2.2f}".format(power))
+        self.V_display.insert("end", "{:2.2f}".format(voltage))
+        self.A_display.insert("end", "{:2.2f}".format(current))
         if self.state == "paused":
             self.state_display.insert("end", self.prev_state + "-")
         self.state_display.insert("end", str(self.state))
@@ -196,14 +196,14 @@ class cntrl_pnl:
     def pause_btn_handler(self):
         print("handling pause button")
         self.set_spi_buffer(PAUSE_STATE)
-        #self.spi.xfer2([PAUSE_STATE] + [0x00] * 5)
+        #self.spi.xfer2([PAUSE_STATE] + [0x00] * RECIEVED_DATA_LENGTH)
 
     def generate_btn_handler(self):
         print("handling generate button")
         self.set_spi_buffer(GENERATE_STATE)
-        #self.spi.xfer2([GENERATE_STATE] + [0x00] * 5)
+        #self.spi.xfer2([GENERATE_STATE] + [0x00] * RECIEVED_DATA_LENGTH)
 
     def store_btn_handler(self):
         print("handling store button")
         self.set_spi_buffer(STORE_STATE)
-        #self.spi.xfer2([STORE_STATE] + [0x00] * 5)
+        #self.spi.xfer2([STORE_STATE] + [0x00] * RECIEVED_DATA_LENGTH)
