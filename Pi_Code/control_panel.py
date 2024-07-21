@@ -123,7 +123,7 @@ class cntrl_pnl:
 		self.root.mainloop()
 
 	def set_spi_buffer(self, value):
-		self.spi_request_buffer = value
+		self.spi_request_buffer = [value] + [0x00] * 5
 		self.spi_request_buffer_flag = True
 
 	def new_command_available(self):
@@ -158,15 +158,15 @@ class cntrl_pnl:
 
 	def pause_btn_handler(self):
 		print("handling pause button")
-		self.set_spi_buffer([0x03] + [0x00] * 5)
+		self.set_spi_buffer(0x03)
 		#self.spi.xfer2([0x03] + [0x00] * 5)
 
 	def generate_btn_handler(self):
 		print("handling generate button")
-		self.set_spi_buffer([0x02] + [0x00] * 5)
+		self.set_spi_buffer(0x02)
 		#self.spi.xfer2([0x02] + [0x00] * 5)
 
 	def store_btn_handler(self):
 		print("handling store button")
-		self.set_spi_buffer([0x01] + [0x00] * 5)
+		self.set_spi_buffer(0x01)
 		#self.spi.xfer2([0x01] + [0x00] * 5)
