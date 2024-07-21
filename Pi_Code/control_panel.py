@@ -18,7 +18,7 @@ class cntrl_pnl:
         self.spi_request_buffer = []
         self.spi_request_buffer_flag = False
 
-        self.state = "state error"
+        self.state = "await"
         self.prev_state = self.state
 
         self.spi = spi
