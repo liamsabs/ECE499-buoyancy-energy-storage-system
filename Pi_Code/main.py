@@ -15,26 +15,26 @@ control = cntrl_pnl(spi)
 
 def Pi_MC_comms_loop():
 
-	while(True):
+    while(True):
 
-		# check if the MC is ready to communicate
-		if (GPIO.input(MC_transmit_ready_pin) == GPIO.HIGH):
+        # check if the MC is ready to communicate
+        if (GPIO.input(MC_transmit_ready_pin) == GPIO.HIGH):
 
-			# default command is a data request
-			command = [0x04] + [0x00] * 5
+            # default command is a data request
+            command = [0x04] + [0x00] * 5
 
-			# replacve with command from control panel if available
-			if (control.new_command_available()):
-				command = control.get_last_command()
+            # replacve with command from control panel if available
+            if (control.new_command_available()):
+                command = control.get_last_command()
 
-			# send command
-			recieved_data = spi.xfer2(command)
+            # send command
+            recieved_data = spi.xfer2(command)
 
-			# deal with recieved data
-			if recieved_data != [0 for i in range(6)]:
-				control.update_display(recieved_data)
+            # deal with recieved data
+            if recieved_data != [0 for i in range(6)]:
+                control.update_display(recieved_data)
 
-			#time.sleep(0.5)
+            #time.sleep(0.5)
 
 _thread.start_new_thread(Pi_MC_comms_loop, ())
 
