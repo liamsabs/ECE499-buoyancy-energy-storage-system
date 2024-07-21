@@ -42,7 +42,7 @@ class cntrl_pnl:
 
         # DISPLAY
 
-        widget_height = 2
+        widget_height = 1
         widget_width = 20
 
         self.num_disp_fr = ttk.Frame(self.display_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', width=1000, height=1000)
