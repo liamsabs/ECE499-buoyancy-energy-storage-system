@@ -96,9 +96,9 @@ void SPI1_Initialize (void)
     IEC0bits.SPI1TXIE = 0; // Disable TX Interrupt
     
     /*Set SPI Interrupt Priority*/
-    IPC31bits.SPI1IP = 1;
-    IPC2bits.SPI1RXIP = 1;
-    IPC2bits.SPI1TXIP = 2;
+    IPC31bits.SPI1IP = 7;
+    IPC2bits.SPI1RXIP = 7;
+    IPC2bits.SPI1TXIP = 6;
     
     /* SPI1CON1 Register Settings*/
     SPI1CON1bits.DISSCK = 0; // Internal Serial Clock is enabled

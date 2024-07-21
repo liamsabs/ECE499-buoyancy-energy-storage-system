@@ -92,10 +92,10 @@ typedef union
     struct
     {
         /* Run motor indication 
-         00=stopped
-         * 01=running
-         * 10=generating
-         * 11=Unused
+           00=Unused
+         * 01=Storing
+         * 10=Generating
+         * 11=Paused
          */
         unsigned MotorState:2;
         /* Open loop/closed loop indication */
