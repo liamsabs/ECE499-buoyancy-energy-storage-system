@@ -169,6 +169,8 @@ class cntrl_pnl:
             self.state = "generate"
         elif state_value_recieved == STORE_STATE:
             self.state = "store"
+        elif state_value_recieved == DATA_RQ_STATE:
+            pass
 
         if self.state != "paused":
             self.prev_state = self.state
