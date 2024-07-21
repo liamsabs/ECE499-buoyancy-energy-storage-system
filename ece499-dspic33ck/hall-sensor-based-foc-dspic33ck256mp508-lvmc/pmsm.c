@@ -725,6 +725,7 @@ void __attribute__((__interrupt__,no_auto_psv)) _ADCInterrupt()
         measureInputs.current.Ia = ADCBUF_INV_A_IPHASE1;
         measureInputs.current.Ib = ADCBUF_INV_A_IPHASE2; 
         measureInputs.current.Ibus = ADCBUF_INV_A_IBUS; 
+        MCAPP_MeasureCurrentCalibrate(&measureInputs);
     }
    
     //If the offset value wasn't recently updated we measure it.
@@ -776,7 +777,7 @@ void __attribute__((interrupt, no_auto_psv)) _SPI1RXInterrupt(void)
         if(rxBuffer!=0){
         /* If this sends sensor data*/
             while(1U == SPI1STATLbits.SPITBF); //wait to make sure SPI transfer buffer is not full
-            SPI1BUFL = txBufferDummy[txCounter];  // Transmit first byte then increment
+            SPI1BUFL = txBuffer[txCounter];  // Transmit first byte then increment
             txCounter++;
             //IEC0bits.SPI1RXIE = 0; //disable SPI1 Recieve Interrupt
             SPI1IMSKLbits.SPITBEN = 1;  //sets interrupt to trigger on SPI transmit buffer empty
@@ -801,8 +802,8 @@ void __attribute__((interrupt, no_auto_psv)) _SPI1TXInterrupt(void)
 {
     if (txCounter < SPI_TX_BUFFER_SIZE) {
         while (SPI1STATLbits.SPITBF);
-        //SPI1BUFL = txBufferDummy[txCounter++];  // Transmit byte then increment
-        SPI1BUFL = txBufferDummy[txCounter];
+        //SPI1BUFL = txBufferDummy[txCounter];  // Transmit byte then increment
+        SPI1BUFL = txBuffer[txCounter];
         txCounter++;
         if (txCounter >= SPI_TX_BUFFER_SIZE) { // If last byte of response sent
             IEC0bits.SPI1TXIE = 0; // Disable SPI1 Transmit Interrupt
@@ -816,7 +817,27 @@ void __attribute__((interrupt, no_auto_psv)) _SPI1TXInterrupt(void)
 
     IFS0bits.SPI1TXIF = 0; // Clear TX interrupt flag
 }
+// *****************************************************************************
+/* Function:
+ UpdateState(void)
 
+  Summary:
+  Updates Motor state based on the data received from SPI
+
+  Description:
+ 
+  Precondition:
+    None.
+
+  Parameters:
+    None
+
+  Returns:
+    None.
+
+  Remarks:
+    None.
+ */
 void UpdateState(void){
     /* Processing the commands based on the input */
     if (rxBuffer == 0x01) { // store command

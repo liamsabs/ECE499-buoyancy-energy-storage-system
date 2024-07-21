@@ -877,7 +877,7 @@ void InitPWMGenerator2 (void)
     /* ADC Trigger 2 Source is PG2TRIGA Compare Event Enable bit
        0 = PG2TRIGA register compare event is disabled as 
            trigger source for ADC Trigger 2 */
-    PG2EVTHbits.ADTR2EN1 = 0;
+    PG2EVTHbits.ADTR2EN1 = 1;
     /* ADC Trigger 1 Offset Selection bits
        00000 = No offset */
     PG2EVTHbits.ADTR1OFS = 0;
