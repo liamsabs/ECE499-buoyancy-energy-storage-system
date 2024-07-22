@@ -6,24 +6,24 @@ RECIEVED_DATA_LENGTH = 8
 STORING_STATE = 0x01
 GENERATE_STATE = 0x02
 PAUSE_STATE = 0x03
+DATA_RQ_STATE = 0x04
 IDLE_STATE = 0x05
 STORED_STATE = 0x06
-DATA_RQ_STATE = 0x04
 
 VOLTAGE_ADC_RATIO = 114.899 * 4
-CURRENT_ADC_RATIO = 100.000 # PLACEHOLDER
+CURRENT_ADC_RATIO = 700.000
 
-class cntrl_pnl:
+class BESS_control_panel:
 
-    def __init__(self, spi):
+    def __init__(self):
 
-        self.spi_request_buffer = []
-        self.spi_request_buffer_flag = False
+        # buffer to store the SPI message for an outgoing command from the dashboard
+        self.spi_rq_buffer = []
+        self.spi_rq_buffer_flag = False # this flag is True if a new command is ready to be sent
 
+        # stores the system state
         self.state = "await"
         self.prev_state = self.state
-
-        self.spi = spi
 
         self.window_width = 775
 
@@ -47,7 +47,7 @@ class cntrl_pnl:
 
         self.num_disp_fr = ttk.Frame(self.display_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', width=1000, height=1000)
 
-        self.screen_reset_button = ttk.Button(self.num_disp_fr, text='reset output', command=self.start_cntrl_pnl)
+        self.screen_reset_button = ttk.Button(self.num_disp_fr, text='reset output', command=self.begin)
         self.num_disp_obj = Text(self.num_disp_fr, wrap='word', padx=10, pady=10, width=30)
 
         self.W_fr = ttk.Frame(self.display_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', height=100)
@@ -130,30 +130,29 @@ class cntrl_pnl:
         self.num_disp_fr.rowconfigure(1, weight=1)
 
     # START WINDOW
-    def start_cntrl_pnl(self):
+    def begin(self):
         self.root.update()
         #self.root.after_idle(self.update_display)
         self.num_disp_obj.delete(1.0, END)
         self.num_disp_obj.insert(1.0, "Group 21 - Bouyancy Energy Storage System (BESS)\n")
         self.root.mainloop()
 
-    def set_spi_buffer(self, value):
-        self.spi_request_buffer = [value] + [0x00] * RECIEVED_DATA_LENGTH
-        self.spi_request_buffer_flag = True
+    def create_command_request(self, value):
+        self.spi_rq_buffer = [value] + [0x00] * RECIEVED_DATA_LENGTH
+        self.spi_rq_buffer_flag = True
 
-    def new_command_available(self):
-        return self.spi_request_buffer_flag
+    def is_new_command_available(self):
+        return self.spi_rq_buffer_flag
 
-    def get_last_command(self):
-        returnValue = self.spi_request_buffer
-        self.spi_request_buffer = []
-        self.spi_request_buffer_flag = False
+    def get_latest_command(self):
+        returnValue = self.spi_rq_buffer
+        self.spi_rq_buffer = []
+        self.spi_rq_buffer_flag = False
         return returnValue
 
     def update_display(self, values, *args):
 
         # handle debug console
-
         display_str = "["
         for v in values:
             display_str += " " + "{:03d}".format(v)
@@ -210,15 +209,12 @@ class cntrl_pnl:
 
     def pause_btn_handler(self):
         print("handling pause button")
-        self.set_spi_buffer(PAUSE_STATE)
-        #self.spi.xfer2([PAUSE_STATE] + [0x00] * RECIEVED_DATA_LENGTH)
+        self.create_command_request(PAUSE_STATE)
 
     def generate_btn_handler(self):
         print("handling generate button")
-        self.set_spi_buffer(GENERATE_STATE)
-        #self.spi.xfer2([GENERATE_STATE] + [0x00] * RECIEVED_DATA_LENGTH)
+        self.create_command_request(GENERATE_STATE)
 
     def store_btn_handler(self):
         print("handling store button")
-        self.set_spi_buffer(STORING_STATE)
-        #self.spi.xfer2([STORE_STATE] + [0x00] * RECIEVED_DATA_LENGTH)
+        self.create_command_request(STORING_STATE)
