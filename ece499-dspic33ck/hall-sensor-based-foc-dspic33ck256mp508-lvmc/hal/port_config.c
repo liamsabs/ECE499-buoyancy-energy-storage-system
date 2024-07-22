@@ -263,6 +263,8 @@ void MapGPIOHWFunction(void)
     
     /** Output Pin to Trigger Interrupt on Master ((MicroBus_A_AN) **/
     TRISEbits.TRISE1 = 0;            //PIN: 4  - RE1 [To write: write to LATEbits.LATE1 or _LATE1] 
+    
+    
 	
 	/** Diagnostic Interface for LVMC Board etc.
         Re-map UART Channels to the device pins connected to the following 

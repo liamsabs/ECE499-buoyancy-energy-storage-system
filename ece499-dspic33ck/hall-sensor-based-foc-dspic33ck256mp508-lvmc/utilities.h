@@ -35,11 +35,11 @@
 #include <stdint.h> //std library integers for bit specificity
 
 typedef enum {
-    IDLE,
-    STORING,
-    STORED,
-    GENERATING,
-    PAUSED
+    IDLE=5,
+    STORING=1,
+    STORED =6,
+    GENERATING=2,
+    PAUSED=3
 } SystemState;
 
 typedef struct {

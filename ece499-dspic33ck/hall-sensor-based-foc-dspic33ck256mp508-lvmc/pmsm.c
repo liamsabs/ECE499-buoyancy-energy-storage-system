@@ -84,8 +84,12 @@ MC_PIPARMOUT_T piOutputId;
 MC_PIPARMIN_T piInputOmega;
 MC_PIPARMOUT_T piOutputOmega;
 
+
 volatile uint16_t adcDataBuffer;
 MCAPP_MEASURE_T measureInputs;
+volatile int32_t IbusSum;
+volatile int32_t ISRCounter;
+
 
 /*SPI calling frequency*/
 #define SENSE_SAMPLING_PERIOD_SEC 0.1
@@ -156,6 +160,7 @@ void UpdateState(void);
 
 int main ( void )
 {
+    system.state=STORING;
     SPICounter=0;
     SPIFlag=0;
     RXFlag=0;
@@ -524,7 +529,7 @@ int16_t sectorToAngle[8] =  // 3, 2, 6, 4, 5, 1
  *****************************************************************************/
 void __attribute__((interrupt, no_auto_psv)) HAL_MC1HallStateChangeInterrupt ()
 {
-     LATEbits.LATE1=0;//Disable SPI
+     SPITrigger;//Disable SPI
     mcappData.timerValue = TMR1;
     TMR1 = 0;
 //    if(mcappData.timerValue == 0)
@@ -554,22 +559,22 @@ void __attribute__((interrupt, no_auto_psv)) HAL_MC1HallStateChangeInterrupt ()
             uGF.bits.MotorState=0b11;
             /*TODO: Engage Locking Mechanism*/
             prepareTxData(); //acquire sensor and system state data
-            LATEbits.LATE1 = 1; //set PORTE1 high (MicroBus_A_AN)
+            SPITrigger = 1; //set PORTE1 high (MicroBus_A_AN)
             
             
         } 
         
     }else if (uGF.bits.MotorState == 0b10){
         
-        if(--system.position <= GEN_DONE_POS){ //decrements then checks if end of generating
+        /*if(--system.position <= GEN_DONE_POS){ //decrements then checks if end of generating
             
             system.state = IDLE; // set state to IDLE
             uGF.bits.MotorState=0b11;
             ResetParmeters(); // stop generating
             prepareTxData(); //acquire sensor and system state data
-            LATEbits.LATE1 = 1; //set PORTE1 high (MicroBus_A_AN)
+            SPITrigger = 1; //set PORTE1 high (MicroBus_A_AN)
             
-        }
+        }*/
     }
     HAL_MC1HallStateChangeInterruptFlagClear();
 }
@@ -599,7 +604,7 @@ void __attribute__((interrupt, no_auto_psv)) HAL_MC1HallStateChangeInterrupt ()
  */
 void __attribute__((__interrupt__,no_auto_psv)) _ADCInterrupt()
 {
-    LATEbits.LATE1=0;//Disable SPI
+    SPITrigger=0;//Disable SPI
 #ifdef SINGLE_SHUNT 
     if (IFS4bits.PWM1IF ==1)
     {
@@ -638,15 +643,19 @@ void __attribute__((__interrupt__,no_auto_psv)) _ADCInterrupt()
         break;  
     }
 #endif
+    //Iterate the ISR counter based each time we enter
+    ISRCounter++;
+    //Measure inputs from ADC and calibrate based on offsets
+    measureInputs.current.Ia = ADCBUF_INV_A_IPHASE1;
+    measureInputs.current.Ib = ADCBUF_INV_A_IPHASE2; 
+    measureInputs.current.Ibus = ADCBUF_INV_A_IBUS; 
+    MCAPP_MeasureCurrentCalibrate(&measureInputs);
+    //Increment the current
+    IbusSum+=measureInputs.current.Ibus;
+        
     if (uGF.bits.MotorState!=0b11)
     {
-        //Measure the currents and store them in measure Inputs variable
-        measureInputs.current.Ia = ADCBUF_INV_A_IPHASE1;
-        measureInputs.current.Ib = ADCBUF_INV_A_IPHASE2; 
-        measureInputs.current.Ibus= ADCBUF_INV_A_IBUS;
-
-        //Calibrate based on offset (subtract offset from the measured value)
-        MCAPP_MeasureCurrentCalibrate(&measureInputs);
+        
         iabc.a = measureInputs.current.Ia;
         iabc.b = measureInputs.current.Ib;
 
@@ -720,13 +729,7 @@ void __attribute__((__interrupt__,no_auto_psv)) _ADCInterrupt()
         pwmDutycycle.dutycycle1 = MIN_DUTY;
         PWMDutyCycleSet(&pwmDutycycle);
     } 
-    if (uGF.bits.MotorState == 0b11)
-    {
-        measureInputs.current.Ia = ADCBUF_INV_A_IPHASE1;
-        measureInputs.current.Ib = ADCBUF_INV_A_IPHASE2; 
-        measureInputs.current.Ibus = ADCBUF_INV_A_IBUS; 
-        MCAPP_MeasureCurrentCalibrate(&measureInputs);
-    }
+
    
     //If the offset value wasn't recently updated we measure it.
     if (MCAPP_MeasureCurrentOffsetStatus(&measureInputs) == 0)
@@ -811,7 +814,7 @@ void __attribute__((interrupt, no_auto_psv)) _SPI1TXInterrupt(void)
             //IEC0bits.SPI1RXIE = 1; // Enable SPI1 Receive Interrupt
             IFS0bits.SPI1RXIF = 0; // clear recieve interrupt flag
             txCounter = 0; // Reset txCounter for next transmission
-            LATEbits.LATE1 = 0; //clear PORTE1 (MicroBus_A_AN) to trigger future interrupts on master
+            SPITrigger = 0; //clear PORTE1 (MicroBus_A_AN) to trigger future interrupts on master
         }
     }
 
@@ -973,8 +976,11 @@ void prepareTxData(void){
     txBuffer[1] = (uint8_t)(measureInputs.dcBusVoltage);
         
     //load bus current into transmit buffer
-    txBuffer[2] = (uint8_t)(measureInputs.current.Ibus >> 8);
-    txBuffer[3] = (uint8_t)(measureInputs.current.Ibus);
+    uint16_t IbusSend=__builtin_divud(IbusSum,ISRCounter);
+    IbusSum=0;
+    ISRCounter=0;
+    txBuffer[2] = (uint8_t)(IbusSend >> 8);
+    txBuffer[3] = (uint8_t)(IbusSend);
         
     //load system state into transmit buffer
     txBuffer[4] = (uint8_t)system.state;
@@ -1021,7 +1027,7 @@ void CalculateParkAngle(void)
             motorStartUpData.startupLock += 1;
         }
         /* Then ramp up till the end speed */
-        else if (motorStartUpData.startupRamp < END_SPEED)
+        else if (motorStartUpData.startupRamp < END_SPEED_RPM)
         {
             motorStartUpData.startupRamp += OPENLOOP_RAMPSPEED_INCREASERATE;
         }
