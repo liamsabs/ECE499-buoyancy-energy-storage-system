@@ -98,7 +98,7 @@ uint32_t SPICounter;
 
 #define SPI_RX_BUFFER_SIZE  1
 /* SPI1 Transmit Buffer Size*/
-#define SPI_TX_BUFFER_SIZE  5 
+#define SPI_TX_BUFFER_SIZE  9 
 
 volatile uint8_t rxBuffer;
 volatile uint8_t txBuffer[SPI_TX_BUFFER_SIZE];
@@ -546,7 +546,7 @@ void __attribute__((interrupt, no_auto_psv)) HAL_MC1HallStateChangeInterrupt ()
     mcappData.hallCorrectionFactor = mcappData.hallThetaError >> HALL_CORRECTION_DIVISOR;
     mcappData.hallCorrectionCounter = HALL_CORRECTION_STEPS;
     
-    if(system.state == STORING){
+    if(uGF.bits.MotorState == 0b01){
         
         if(++system.position >= STORING_DONE_POS){ //increments then checks if end of storing
             
@@ -559,7 +559,7 @@ void __attribute__((interrupt, no_auto_psv)) HAL_MC1HallStateChangeInterrupt ()
             
         } 
         
-    }else if (system.state == GENERATING){
+    }else if (uGF.bits.MotorState == 0b10){
         
         if(--system.position <= GEN_DONE_POS){ //decrements then checks if end of generating
             
@@ -978,6 +978,11 @@ void prepareTxData(void){
         
     //load system state into transmit buffer
     txBuffer[4] = (uint8_t)system.state;
+    
+    //Prepare the motor position as a percentage
+    uint32_t Pos = __builtin_mulss(100,system.position);
+    Pos = __builtin_divud(Pos, STORING_DONE_POS );
+    txBuffer[5] = (uint8_t)Pos;
     
 }
 

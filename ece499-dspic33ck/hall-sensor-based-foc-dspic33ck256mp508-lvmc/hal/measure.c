@@ -139,7 +139,7 @@ void MCAPP_MeasureCurrentCalibrate(MCAPP_MEASURE_T *pMotorInputs)
     
     pCurrent->Ia = pCurrent->Ia - pCurrent->offsetIa;
     pCurrent->Ib = pCurrent->Ib  - pCurrent->offsetIb;
-    pCurrent->Ibus = pCurrent->Ibus-pCurrent->offsetIbus;
+    //pCurrent->Ibus = pCurrent->Ibus-pCurrent->offsetIbus;
 }
 
 int16_t MCAPP_MeasureCurrentOffsetStatus (MCAPP_MEASURE_T *pMotorInputs)

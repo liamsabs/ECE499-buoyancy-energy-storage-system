@@ -543,11 +543,11 @@ void InitPWMGenerator1 (void)
         /* ADC Trigger 2 Source is PG1TRIGC Compare Event Enable bit
        0 = PG1TRIGC register compare event is disabled as 
            trigger source for ADC Trigger 2 */
-    PG1EVTHbits.ADTR2EN3 = 0;
+    PG1EVTHbits.ADTR2EN3 = 1;
     /* ADC Trigger 2 Source is PG1TRIGB Compare Event Enable bit
        0 = PG1TRIGB register compare event is disabled as 
            trigger source for ADC Trigger 2 */
-    PG1EVTHbits.ADTR2EN2 = 0;
+    PG1EVTHbits.ADTR2EN2 = 1;
 #endif
     /* ADC Trigger 2 Source is PG1TRIGA Compare Event Enable bit
        0 = PG1TRIGA register compare event is disabled as 
@@ -877,7 +877,7 @@ void InitPWMGenerator2 (void)
     /* ADC Trigger 2 Source is PG2TRIGA Compare Event Enable bit
        0 = PG2TRIGA register compare event is disabled as 
            trigger source for ADC Trigger 2 */
-    PG2EVTHbits.ADTR2EN1 = 1;
+    PG2EVTHbits.ADTR2EN1 = 0;
     /* ADC Trigger 1 Offset Selection bits
        00000 = No offset */
     PG2EVTHbits.ADTR1OFS = 0;
@@ -1162,7 +1162,7 @@ void InitPWMGenerator4 (void)
     /* ADC Trigger 1 Source is PG4TRIGA Compare Event Enable bit
        0 = PG4TRIGA register compare event is disabled as trigger source for 
            ADC Trigger 1 */
-    PG4EVTLbits.ADTR1EN1 = 0;
+    PG4EVTLbits.ADTR1EN1 = 1;
     /* Update Trigger Select bits
        01 = A write of the PG4DC register automatically sets the UPDATE bit
        00 = User must set the UPDATE bit manually*/
