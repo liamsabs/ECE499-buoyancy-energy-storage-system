@@ -67,7 +67,7 @@ class cntrl_pnl:
         self.state_display = Text(self.state_fr, wrap='word', padx=10, pady=10, width=widget_width, height=widget_height)
 
         self.depth_fr = ttk.Frame(self.display_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', height=100)
-        self.depth_label = ttk.Label(self.depth_fr, padding=(0, 0, 0, 0), text="DEPTH (m):", justify='left', anchor='w', relief='')
+        self.depth_label = ttk.Label(self.depth_fr, padding=(0, 0, 0, 0), text="DEPTH (%):", justify='left', anchor='w', relief='')
         self.depth_display = Text(self.depth_fr, wrap='word', padx=10, pady=10, width=widget_width, height=widget_height)
 
         self.speed_fr = ttk.Frame(self.display_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', height=100)
