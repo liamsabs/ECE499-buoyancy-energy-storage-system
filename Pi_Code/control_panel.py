@@ -6,12 +6,12 @@ RECIEVED_DATA_LENGTH = 8
 STORING_STATE = 0x01
 GENERATE_STATE = 0x02
 PAUSE_STATE = 0x03
-DATA_RQ_STATE = 0x04
+DATA_RQ_COMMAND = 0x04
 IDLE_STATE = 0x05
 STORED_STATE = 0x06
 
-VOLTAGE_ADC_RATIO = 114.899 * 4
-CURRENT_ADC_RATIO = 700.000
+VOLTAGE_ADC_RATIO = 459.596
+CURRENT_ADC_RATIO = 054.067
 
 class BESS_control_panel:
 
@@ -182,7 +182,7 @@ class BESS_control_panel:
             self.state = "stored"
         elif state_value_recieved == IDLE_STATE:
             self.state = "idle"
-        elif state_value_recieved == DATA_RQ_STATE:
+        elif state_value_recieved == DATA_RQ_COMMAND:
             pass
         else:
             self.state = "state error"
