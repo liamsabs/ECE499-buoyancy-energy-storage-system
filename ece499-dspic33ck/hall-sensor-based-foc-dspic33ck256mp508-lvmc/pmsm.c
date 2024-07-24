@@ -33,7 +33,7 @@
 *
 *******************************************************************************/
 
-#define NOMECH
+//#define NOMECH
 #include <xc.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -87,7 +87,6 @@ MC_PIPARMOUT_T piOutputOmega;
 
 volatile uint16_t adcDataBuffer;
 MCAPP_MEASURE_T measureInputs;
-volatile int32_t IbusSum;
 volatile int32_t ISRCounter;
 
 
@@ -160,7 +159,6 @@ void UpdateState(void);
 
 int main ( void )
 {
-    system.state=STORING;
     SPICounter=0;
     SPIFlag=0;
     RXFlag=0;
@@ -192,6 +190,10 @@ int main ( void )
             //LATEbits.LATE1=1;
            if(SPIFlag){
                 SPIFlag=0;
+                if(uGF.bits.MotorState==0b11){
+                    //Find the offset of the Ibus
+                    measureInputs.current.offsetIbusext=__builtin_divsd(measureInputs.current.sumIbusext,ISRCounter);
+                }
                 prepareTxData(); //acquire sensor and system state data
                 LATEbits.LATE1 = 1; //set PORTE1 high (MicroBus_A_AN)
             }
@@ -648,10 +650,16 @@ void __attribute__((__interrupt__,no_auto_psv)) _ADCInterrupt()
     //Measure inputs from ADC and calibrate based on offsets
     measureInputs.current.Ia = ADCBUF_INV_A_IPHASE1;
     measureInputs.current.Ib = ADCBUF_INV_A_IPHASE2; 
+    measureInputs.current.Ic = ADCBUF_INV_A_IPHASE3;
+    measureInputs.current.Ibusext = ADCBUF_INV_A_IBUS_EXT;
     measureInputs.current.Ibus = ADCBUF_INV_A_IBUS; 
+    
+    
     MCAPP_MeasureCurrentCalibrate(&measureInputs);
     //Increment the current
-    IbusSum+=measureInputs.current.Ibus;
+    
+    measureInputs.current.sumIbusext+=measureInputs.current.Ibusext;
+    
         
     if (uGF.bits.MotorState!=0b11)
     {
@@ -757,9 +765,12 @@ void __attribute__((__interrupt__,no_auto_psv)) _ADCInterrupt()
     
     // State and message processing logic
     if(++SPICounter>=SENSOR_SAMPLE_RATE_REVS){
-        
+        //If the counter is at max then we send an update
         SPIFlag = 1;
         SPICounter=0;
+        //If the motor is off we want to set the offset current of the Ibus to this to compensate
+        //For current flowing through internal circuitry
+        
     }
 
 
@@ -972,23 +983,24 @@ void UpdateState(void){
 void prepareTxData(void){
 
     //load bus voltage into transmit buffer
-    txBuffer[0] = (uint8_t)(measureInputs.dcBusVoltage >> 8);
-    txBuffer[1] = (uint8_t)(measureInputs.dcBusVoltage);
+    txBuffer[0] = (uint8_t)(measureInputs.dcBusVoltage  >> 8)&0xFF;
+    txBuffer[1] = (uint8_t)(measureInputs.dcBusVoltage&0xFF);
         
-    //load bus current into transmit buffer
-    uint16_t IbusSend=__builtin_divud(IbusSum,ISRCounter);
-    IbusSum=0;
+    //load bus current into transmit buffer, this is an averaging of all the currents measured
+    int16_t IbusSend=__builtin_divsd(measureInputs.current.sumIbusext,ISRCounter)-measureInputs.current.offsetIbusext;
+    //Reset the current and offset counter
+    measureInputs.current.sumIbusext=0;
     ISRCounter=0;
-    txBuffer[2] = (uint8_t)(IbusSend >> 8);
-    txBuffer[3] = (uint8_t)(IbusSend);
+    txBuffer[2] = (IbusSend >> 8)&0xFF;
+    txBuffer[3] = (IbusSend)&0xFF;
         
     //load system state into transmit buffer
-    txBuffer[4] = (uint8_t)system.state;
+    txBuffer[4] = (uint8_t)system.state&0xFF;
     
     //Prepare the motor position as a percentage
     uint32_t Pos = __builtin_mulss(100,system.position);
     Pos = __builtin_divud(Pos, STORING_DONE_POS );
-    txBuffer[5] = (uint8_t)Pos;
+    txBuffer[5] = (uint8_t)Pos&0xFF;
     
 }
 

@@ -168,9 +168,18 @@ void MapGPIOHWFunction(void)
     ANSELBbits.ANSELB2 = 1;
     TRISBbits.TRISB2 = 1;   //Pin 41: OA2OUT/AN1/AN7/ANA0/CMP1D/CMP2D/CMP3D/RP34/SCL3/INT0/RB2
     
+    //Ic Out
+    ANSELBbits.ANSELB8 = 1;
+    TRISBbits.TRISB8 = 1;
+    
     //Ibus Out
     ANSELAbits.ANSELA4 = 1;
     TRISAbits.TRISA4 = 1;   //Pin 23: OA3OUT/AN4/CMP3B/IBIAS3/RA4
+    
+    //External current sensor
+    ANSELEbits.ANSELE0 = 1;
+    ANSELEbits.ANSELE0 = 1;
+    
     
     
 #ifdef INTERNAL_OPAMP_CONFIG

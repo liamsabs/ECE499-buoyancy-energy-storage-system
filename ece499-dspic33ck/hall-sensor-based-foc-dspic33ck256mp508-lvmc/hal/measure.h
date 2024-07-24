@@ -80,17 +80,23 @@ typedef struct
     int16_t
         offsetIa,       /* A phase current offset */
         offsetIb,       /* B phase current offset */
+        offsetIc,       /* Ic offset voltage*/
         offsetIbus,     /* BUS current offset */
+        offsetIbusext,  /* Ibus being used by external */
         Ia,             /* A phase Current Feedback */
         Ib,             /* B phase Current Feedback */
+        Ic,             /*C phase Current Feedback */
         Ibus,           /* BUS current Feedback */
+        Ibusext,        /* Ibus from external op amp*/
         counter,        /* counter */
         status;         /* flag to indicate offset measurement completion */
 
     int32_t
         sumIa,          /* Accumulation of Ia */
         sumIb,          /* Accumulation of Ib */
-        sumIbus;        /* Accumulation of Ibus */
+        sumIc,          /* Accumulation of Ic */
+        sumIbus,        /* Accumulation of Ibus */
+        sumIbusext;     /*Accumulation of external Ibus Sensor*/
 
 } MCAPP_MEASURE_CURRENT_T;
 

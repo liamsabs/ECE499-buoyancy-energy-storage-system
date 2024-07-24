@@ -103,6 +103,7 @@ void MCAPP_MeasureCurrentOffset(MCAPP_MEASURE_T *pMotorInputs)
     
     pCurrent->sumIa += pCurrent->Ia;
     pCurrent->sumIb += pCurrent->Ib;
+    pCurrent->sumIc += pCurrent->Ic;
     pCurrent->sumIbus += pCurrent->Ibus;
     pCurrent->counter++;
 
@@ -110,12 +111,14 @@ void MCAPP_MeasureCurrentOffset(MCAPP_MEASURE_T *pMotorInputs)
     {
         pCurrent->offsetIa = (int16_t)(pCurrent->sumIa >> OFFSET_COUNT_BITS);
         pCurrent->offsetIb = (int16_t)(pCurrent->sumIb >> OFFSET_COUNT_BITS);
+        pCurrent->offsetIc = (int16_t)(pCurrent->sumIc >> OFFSET_COUNT_BITS);
         pCurrent->offsetIbus =
             (int16_t)(pCurrent->sumIbus >> OFFSET_COUNT_BITS);
 
         pCurrent->counter = 0;
         pCurrent->sumIa = 0;
         pCurrent->sumIb = 0;
+        pCurrent->sumIc = 0;
         pCurrent->sumIbus = 0;
         pCurrent->status = 1;
     }
@@ -139,7 +142,8 @@ void MCAPP_MeasureCurrentCalibrate(MCAPP_MEASURE_T *pMotorInputs)
     
     pCurrent->Ia = pCurrent->Ia - pCurrent->offsetIa;
     pCurrent->Ib = pCurrent->Ib  - pCurrent->offsetIb;
-    //pCurrent->Ibus = pCurrent->Ibus-pCurrent->offsetIbus;
+    pCurrent->Ic = pCurrent->Ic - -pCurrent->offsetIc;
+    pCurrent->Ibus = pCurrent->Ibus-pCurrent->offsetIbus;
 }
 
 int16_t MCAPP_MeasureCurrentOffsetStatus (MCAPP_MEASURE_T *pMotorInputs)

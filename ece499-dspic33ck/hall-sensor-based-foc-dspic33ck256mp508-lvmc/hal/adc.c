@@ -358,13 +358,17 @@ void InitializeADCs (void)
 #else
     /* Trigger Source for Analog Input #4  = 0b0101 */
     //ADTRIG0Hbits.TRGSRC3 = 0x07;
-    ADTRIG1Lbits.TRGSRC4 = 0x4;
+    //ADTRIG1Lbits.TRGSRC4 = 0x4;
+    /*Trigger Source for Analog Input #10 (phase C current)*/
+    ADTRIG2Hbits.TRGSRC10 = 0x4;
     /* Trigger Source for Analog Input #11  = 0b0100 */
     ADTRIG2Hbits.TRGSRC11 = 0x4;
     /* Trigger Source for Analog Input #12  = 0b0100 */
-   // ADTRIG3Lbits.TRGSRC12 = 0x4;
+    ADTRIG3Lbits.TRGSRC12 = 0x4;
     /* Trigger Source for Analog Input #15  = 0b0100 */
     ADTRIG3Hbits.TRGSRC15 = 0x4;
+    /*Trigger Source for Analog Input #20   = 0b0100*/
+    ADTRIG5Lbits.TRGSRC20 = 0x4;
 #endif
 
 }

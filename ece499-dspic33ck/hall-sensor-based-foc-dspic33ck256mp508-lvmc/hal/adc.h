@@ -68,8 +68,10 @@
 // ADC MODULE Related Definitions
 #define ADCBUF_INV_A_IPHASE1    -ADCBUF0
 #define ADCBUF_INV_A_IPHASE2    -ADCBUF1
+#define ADCBUF_INV_A_IPHASE3    -ADCBUF10
 #define ADCBUF_INV_A_IBUS       ADCBUF4
-        
+#define ADCBUF_INV_A_IBUS_EXT   ADCBUF20
+       
 #define ADCBUF_SPEED_REF_A      ADCBUF11
 #define ADCBUF_VBUS_A           ADCBUF15
 #define ADCBUF_MOSFET_TEMP_A    ADCBUF12
