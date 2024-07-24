@@ -94,7 +94,9 @@
 #define LED2                    LATEbits.LATE7
 // LED1(LD10) : (RE6)
 #define LED1                    LATEbits.LATE6
-#define SPITrigger              LATEbits.LATE1
+// SPIInterrupt : (RD15)
+#define SPITrigger              LATDbits.LATD15
+
 
 
 // *****************************************************************************

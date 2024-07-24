@@ -369,6 +369,8 @@ void InitializeADCs (void)
     ADTRIG3Hbits.TRGSRC15 = 0x4;
     /*Trigger Source for Analog Input #20   = 0b0100*/
     ADTRIG5Lbits.TRGSRC20 = 0x4;
+    /*Trigger Source for Analog Input #21*/
+    ADTRIG5Lbits.TRGSRC21 = 0x4;
 #endif
 
 }

@@ -33,7 +33,7 @@
 *
 *******************************************************************************/
 
-//#define NOMECH
+#define NOMECH
 #include <xc.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -58,10 +58,13 @@
 #include "spi1.h"
 #include "utilities.h"
 
+#define BAT_ADC_OFFSET -15750
 
 volatile UGF_T uGF;
 
-
+//TEMPS
+int16_t IbusSend;
+        
 
 
 CTRL_PARM_T ctrlParm;
@@ -95,13 +98,14 @@ volatile int32_t ISRCounter;
 
 /* SPI Counter */
 uint8_t SPIFlag;
-uint8_t RXFlag;
-uint32_t SPICounter; 
+uint8_t RXFlag; 
 #define SENSOR_SAMPLE_RATE_REVS (uint32_t)(PWMFREQUENCY_HZ * SENSE_SAMPLING_PERIOD_SEC)
 
 #define SPI_RX_BUFFER_SIZE  1
 /* SPI1 Transmit Buffer Size*/
 #define SPI_TX_BUFFER_SIZE  9 
+
+uint8_t FirstTime; /*flag to catch if it's the first time sending data. This is so we know if we're in startup and can measure battery offset*/
 
 volatile uint8_t rxBuffer;
 volatile uint8_t txBuffer[SPI_TX_BUFFER_SIZE];
@@ -159,8 +163,9 @@ void UpdateState(void);
 
 int main ( void )
 {
-    SPICounter=0;
+    FirstTime=1;
     SPIFlag=0;
+    ISRCounter=0;
     RXFlag=0;
     InitOscillator();
     SetupGPIOPorts();
@@ -195,7 +200,8 @@ int main ( void )
                     measureInputs.current.offsetIbusext=__builtin_divsd(measureInputs.current.sumIbusext,ISRCounter);
                 }
                 prepareTxData(); //acquire sensor and system state data
-                LATEbits.LATE1 = 1; //set PORTE1 high (MicroBus_A_AN)
+                ISRCounter=0;
+                SPITrigger = 1; //set PORTE1 high (MicroBus_A_AN)
             }
            if(RXFlag){
                UpdateState();
@@ -379,7 +385,7 @@ void DoControl( void )
                     NOMINALSPEED_ELECTR-ENDSPEED_ELECTR)>>15) +
                     ENDSPEED_ELECTR);
             #ifdef NOMECH
-            ctrlParm.targetSpeed=0;
+            ctrlParm.targetSpeed=-500;
             #endif
         }
         
@@ -553,13 +559,14 @@ void __attribute__((interrupt, no_auto_psv)) HAL_MC1HallStateChangeInterrupt ()
     mcappData.hallCorrectionFactor = mcappData.hallThetaError >> HALL_CORRECTION_DIVISOR;
     mcappData.hallCorrectionCounter = HALL_CORRECTION_STEPS;
     
-    if(uGF.bits.MotorState == 0b01){
+   /* if(uGF.bits.MotorState == 0b01){
         
         if(++system.position >= STORING_DONE_POS){ //increments then checks if end of storing
             
             system.state = STORED; //set state to stored
             uGF.bits.MotorState=0b11;
             /*TODO: Engage Locking Mechanism*/
+    /*
             prepareTxData(); //acquire sensor and system state data
             SPITrigger = 1; //set PORTE1 high (MicroBus_A_AN)
             
@@ -577,7 +584,8 @@ void __attribute__((interrupt, no_auto_psv)) HAL_MC1HallStateChangeInterrupt ()
             SPITrigger = 1; //set PORTE1 high (MicroBus_A_AN)
             
         }*/
-    }
+//    }
+
     HAL_MC1HallStateChangeInterruptFlagClear();
 }
 // *****************************************************************************
@@ -645,20 +653,21 @@ void __attribute__((__interrupt__,no_auto_psv)) _ADCInterrupt()
         break;  
     }
 #endif
-    //Iterate the ISR counter based each time we enter
-    ISRCounter++;
+
     //Measure inputs from ADC and calibrate based on offsets
     measureInputs.current.Ia = ADCBUF_INV_A_IPHASE1;
     measureInputs.current.Ib = ADCBUF_INV_A_IPHASE2; 
     measureInputs.current.Ic = ADCBUF_INV_A_IPHASE3;
     measureInputs.current.Ibusext = ADCBUF_INV_A_IBUS_EXT;
     measureInputs.current.Ibus = ADCBUF_INV_A_IBUS; 
+    measureInputs.current.Ibat= ADCBUF_INV_A_IBAT;
     
     
     MCAPP_MeasureCurrentCalibrate(&measureInputs);
-    //Increment the current
+    //Increment the current, this is so we send average current
     
     measureInputs.current.sumIbusext+=measureInputs.current.Ibusext;
+    measureInputs.current.sumIbat+=measureInputs.current.Ibat;
     
         
     if (uGF.bits.MotorState!=0b11)
@@ -764,10 +773,10 @@ void __attribute__((__interrupt__,no_auto_psv)) _ADCInterrupt()
     DiagnosticsStepIsr();
     
     // State and message processing logic
-    if(++SPICounter>=SENSOR_SAMPLE_RATE_REVS){
+    if(++ISRCounter>=SENSOR_SAMPLE_RATE_REVS){
         //If the counter is at max then we send an update
         SPIFlag = 1;
-        SPICounter=0;
+        //This is used later, so we hold onto this
         //If the motor is off we want to set the offset current of the Ibus to this to compensate
         //For current flowing through internal circuitry
         
@@ -987,12 +996,16 @@ void prepareTxData(void){
     txBuffer[1] = (uint8_t)(measureInputs.dcBusVoltage&0xFF);
         
     //load bus current into transmit buffer, this is an averaging of all the currents measured
-    int16_t IbusSend=__builtin_divsd(measureInputs.current.sumIbusext,ISRCounter)-measureInputs.current.offsetIbusext;
-    //Reset the current and offset counter
+    IbusSend=(__builtin_divsd(measureInputs.current.sumIbusext,ISRCounter)-measureInputs.current.offsetIbusext);
+    int16_t IbatSend= __builtin_divsd(measureInputs.current.sumIbat,ISRCounter)-BAT_ADC_OFFSET;
+    //Reset the current sums
     measureInputs.current.sumIbusext=0;
-    ISRCounter=0;
+    measureInputs.current.sumIbat=0;
     txBuffer[2] = (IbusSend >> 8)&0xFF;
     txBuffer[3] = (IbusSend)&0xFF;
+    
+    txBuffer[6] = (IbatSend>>8)&0xFF;
+    txBuffer[7] = (IbatSend)&0xFF;
         
     //load system state into transmit buffer
     txBuffer[4] = (uint8_t)system.state&0xFF;

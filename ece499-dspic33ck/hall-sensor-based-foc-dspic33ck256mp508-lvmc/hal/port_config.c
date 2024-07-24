@@ -176,9 +176,13 @@ void MapGPIOHWFunction(void)
     ANSELAbits.ANSELA4 = 1;
     TRISAbits.TRISA4 = 1;   //Pin 23: OA3OUT/AN4/CMP3B/IBIAS3/RA4
     
-    //External current sensor
+    //External current sensor,
     ANSELEbits.ANSELE0 = 1;
-    ANSELEbits.ANSELE0 = 1;
+    TRISEbits.TRISE0 = 1;
+    
+    //External battery current sensor
+    ANSELEbits.ANSELE1 = 1;
+    TRISEbits.TRISE1 = 1;
     
     
     
@@ -268,10 +272,10 @@ void MapGPIOHWFunction(void)
     // SW2 : 
     TRISEbits.TRISE12 = 1;           // PIN:62 - RE12
     //SW3 :
-    TRISEbits.TRISE13 = 1;           //PIN: 64 - RE13
+    TRISEbits.TRISE13 = 1;             //PIN: 64 - RE13
     
     /** Output Pin to Trigger Interrupt on Master ((MicroBus_A_AN) **/
-    TRISEbits.TRISE1 = 0;            //PIN: 4  - RE1 [To write: write to LATEbits.LATE1 or _LATE1] 
+    TRISDbits.TRISD15 = 0;            //PIN: 79  - RD15 [To write: write to LATEbits.LATE1 or _LATE1] 
     
     
 	

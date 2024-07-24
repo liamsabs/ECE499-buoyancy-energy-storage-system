@@ -83,11 +83,13 @@ typedef struct
         offsetIc,       /* Ic offset voltage*/
         offsetIbus,     /* BUS current offset */
         offsetIbusext,  /* Ibus being used by external */
+        offsetIbat,      /*Ibat offset*/
         Ia,             /* A phase Current Feedback */
         Ib,             /* B phase Current Feedback */
         Ic,             /*C phase Current Feedback */
         Ibus,           /* BUS current Feedback */
         Ibusext,        /* Ibus from external op amp*/
+        Ibat,           /*Current leaving the battery*/
         counter,        /* counter */
         status;         /* flag to indicate offset measurement completion */
 
@@ -96,7 +98,8 @@ typedef struct
         sumIb,          /* Accumulation of Ib */
         sumIc,          /* Accumulation of Ic */
         sumIbus,        /* Accumulation of Ibus */
-        sumIbusext;     /*Accumulation of external Ibus Sensor*/
+        sumIbusext,     /*Accumulation of external Ibus Sensor*/
+        sumIbat;        /*Accumulation of external Ibat Sensor*/
 
 } MCAPP_MEASURE_CURRENT_T;
 
