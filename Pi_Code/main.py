@@ -29,7 +29,7 @@ def spi_comms_loop():
         if (GPIO.input(DSPIC_TRANSMIT_READY) == GPIO.HIGH):
 
             # default command is a data request
-            command = [DATA_RQ_STATE] + [0x00] * RECIEVED_DATA_LENGTH
+            command = [DATA_RQ_COMMAND] + [0x00] * RECIEVED_DATA_LENGTH
 
             # replacve with command from control panel if available
             if (control_panel.is_new_command_available()):
