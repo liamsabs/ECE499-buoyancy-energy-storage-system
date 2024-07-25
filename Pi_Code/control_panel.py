@@ -23,6 +23,12 @@ class BESS_control_panel:
 
     def __init__(self):
 
+        self.window_width = 775
+
+        self.root = Tk()
+        self.root.title('Group 21 - Bouyancy Energy Storage System (BESS) - CONTROL PANEL')
+        self.root.config(padx=10, pady=10, background='#ADD8E6')
+
         # buffer to store the SPI message for an outgoing command from the dashboard
         self.spi_rq_buffer = []
         self.spi_rq_buffer_flag = False # this flag is True if a new command is ready to be sent
@@ -30,12 +36,8 @@ class BESS_control_panel:
         # stores the system state
         self.state = "await"
         self.prev_state = self.state
-
-        self.window_width = 775
-
-        self.root = Tk()
-        self.root.title('Group 21 - Bouyancy Energy Storage System (BESS) - CONTROL PANEL')
-        self.root.config(padx=10, pady=10, background='#ADD8E6')
+        self.is_load_on = IntVar()
+        self.load_btn_update_flag = True
 
         self.controls_fr = ttk.Frame(self.root, padding=(0, 0, 0, 0), relief='')
         self.display_fr = ttk.Frame(self.root, padding=(12, 12, 12, 12), relief='')
@@ -45,112 +47,118 @@ class BESS_control_panel:
         self.pause_btn = ttk.Button(self.controls_fr, text='PAUSE', command=self.pause_btn_handler)
         self.generate_btn = ttk.Button(self.controls_fr, text='GENERATE', command=self.generate_btn_handler)
         self.store_btn = ttk.Button(self.controls_fr, text='STORE', command=self.store_btn_handler)
+        self.load_btn = ttk.Checkbutton(self.controls_fr, text="<- ENABLE LOAD", variable=self.is_load_on, onvalue=1, offvalue=0, command=self.load_btn_handler)
 
         # DISPLAY
 
-        self.num_disp_fr = ttk.Frame(self.display_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', width=1000, height=1000)
+        self.data_disp_fr = ttk.Frame(self.display_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', width=1000, height=1000)
 
-        self.screen_reset_button = ttk.Button(self.num_disp_fr, text='reset output', command=self.begin)
-        self.num_disp_obj = Text(self.num_disp_fr, wrap='word', padx=10, pady=10, width=30)
+        self.debug_clear_btn = ttk.Button(self.data_disp_fr, text='reset output', command=self.begin)
+        self.debug_disp_obj = Text(self.data_disp_fr, wrap='word', padx=10, pady=10, width=30)
+
+        self.widget_disp_fr = ttk.Frame(self.display_fr, padding=(0, 0, 0, 0), borderwidth=0, relief="flat")
 
         widget_disp_height = 1
         widget_disp_width = 20
         widget_disp_pad = 5
 
-        self.W_bus_fr = ttk.Frame(self.display_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', height=100)
-        self.W_bus_label = ttk.Label(self.W_bus_fr, padding=(0, 0, 0, 0), text="BUS POWER (W):", justify='left', anchor='w', relief='')
-        self.W_bus_display = Text(self.W_bus_fr, wrap='word', padx=widget_disp_pad, pady=widget_disp_pad, width=widget_disp_width, height=widget_disp_height)
-
-        self.V_bus_fr = ttk.Frame(self.display_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', height=100)
+        self.V_bus_fr = ttk.Frame(self.widget_disp_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', height=100)
         self.V_bus_label = ttk.Label(self.V_bus_fr, padding=(0, 0, 0, 0), text="BUS VOLTAGE (V):", justify='left', anchor='w', relief='')
         self.V_bus_display = Text(self.V_bus_fr, wrap='word', padx=widget_disp_pad, pady=widget_disp_pad, width=widget_disp_width, height=widget_disp_height)
 
-        self.A_bus_fr = ttk.Frame(self.display_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', height=100)
-        self.A_bus_label = ttk.Label(self.A_bus_fr, padding=(0, 0, 0, 0), text="BUS CURRENT (A):", justify='left', anchor='w', relief='')
+        self.W_bus_fr = ttk.Frame(self.widget_disp_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', height=100)
+        self.W_bus_label = ttk.Label(self.W_bus_fr, padding=(0, 0, 0, 0), text="MOTOR POWER (W):", justify='left', anchor='w', relief='')
+        self.W_bus_display = Text(self.W_bus_fr, wrap='word', padx=widget_disp_pad, pady=widget_disp_pad, width=widget_disp_width, height=widget_disp_height)
+
+        self.A_bus_fr = ttk.Frame(self.widget_disp_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', height=100)
+        self.A_bus_label = ttk.Label(self.A_bus_fr, padding=(0, 0, 0, 0), text="MOTOR CURRENT (A):", justify='left', anchor='w', relief='')
         self.A_bus_display = Text(self.A_bus_fr, wrap='word', padx=widget_disp_pad, pady=widget_disp_pad, width=widget_disp_width, height=widget_disp_height)
 
-        self.state_fr = ttk.Frame(self.display_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', height=100)
-        self.state_label = ttk.Label(self.state_fr, padding=(0, 0, 0, 0), text="STATE:", justify='left', anchor='w', relief='')
-        self.state_display = Text(self.state_fr, wrap='word', padx=widget_disp_pad, pady=widget_disp_pad, width=widget_disp_width, height=widget_disp_height)
-
-        self.depth_fr = ttk.Frame(self.display_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', height=100)
-        self.depth_label = ttk.Label(self.depth_fr, padding=(0, 0, 0, 0), text="DEPTH (%):", justify='left', anchor='w', relief='')
-        self.depth_display = Text(self.depth_fr, wrap='word', padx=widget_disp_pad, pady=widget_disp_pad, width=widget_disp_width, height=widget_disp_height)
-
-        self.speed_fr = ttk.Frame(self.display_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', height=100)
-        self.speed_label = ttk.Label(self.speed_fr, padding=(0, 0, 0, 0), text="SPEED (RPM):", justify='left', anchor='w', relief='')
-        self.speed_display = Text(self.speed_fr, wrap='word', padx=widget_disp_pad, pady=widget_disp_pad, width=widget_disp_width, height=widget_disp_height)
-
-        self.A_bat_fr = ttk.Frame(self.display_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', height=100)
+        self.A_bat_fr = ttk.Frame(self.widget_disp_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', height=100)
         self.A_bat_label = ttk.Label(self.A_bat_fr, padding=(0, 0, 0, 0), text="BATTERY CURRENT (A):", justify='left', anchor='w', relief='')
         self.A_bat_display = Text(self.A_bat_fr, wrap='word', padx=widget_disp_pad, pady=widget_disp_pad, width=widget_disp_width, height=widget_disp_height)
 
+        self.state_fr = ttk.Frame(self.widget_disp_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', height=100)
+        self.state_label = ttk.Label(self.state_fr, padding=(0, 0, 0, 0), text="STATE:", justify='left', anchor='w', relief='')
+        self.state_display = Text(self.state_fr, wrap='word', padx=widget_disp_pad, pady=widget_disp_pad, width=widget_disp_width, height=widget_disp_height)
+
+        self.depth_fr = ttk.Frame(self.widget_disp_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', height=100)
+        self.depth_label = ttk.Label(self.depth_fr, padding=(0, 0, 0, 0), text="DEPTH (%):", justify='left', anchor='w', relief='')
+        self.depth_display = Text(self.depth_fr, wrap='word', padx=widget_disp_pad, pady=widget_disp_pad, width=widget_disp_width, height=widget_disp_height)
+
+        self.speed_fr = ttk.Frame(self.widget_disp_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', height=100)
+        self.speed_label = ttk.Label(self.speed_fr, padding=(0, 0, 0, 0), text="SPEED (RPM):", justify='left', anchor='w', relief='')
+        self.speed_display = Text(self.speed_fr, wrap='word', padx=widget_disp_pad, pady=widget_disp_pad, width=widget_disp_width, height=widget_disp_height)
+
         # GRID
 
-        self.root.minsize(width=self.window_width, height=300)
+        self.root.minsize(width=self.window_width, height=538)
         #self.root.maxsize(width=2000, height=5000)
         self.root.columnconfigure(0, weight=1)
-        self.root.rowconfigure(2, weight=1)
+        self.root.rowconfigure(1, weight=1)
 
         self.controls_fr.grid(column=0, row=0, sticky=(W))
         self.pause_btn.grid(column=0, row=0, sticky=(W))
         self.generate_btn.grid(column=1, row=0, sticky=(W))
         self.store_btn.grid(column=2, row=0, sticky=(W))
+        self.load_btn.grid(column=3, row=0, sticky=(E))
 
-        self.display_fr.grid(column=0, row=2, sticky=(W, N, E, S))
+        self.display_fr.grid(column=0, row=1, sticky=(W, N, E, S))
         self.display_fr.columnconfigure(0, weight=1)
         self.display_fr.rowconfigure(0, weight=1)
-        self.display_fr.rowconfigure(1, weight=1)
+        #self.display_fr.rowconfigure(1, weight=1)
 
-        self.num_disp_fr.grid(column=0, row=0, sticky=(W, N, E, S), rowspan=7)
-        self.screen_reset_button.grid(column=0, row=0, sticky=(W))
-        self.num_disp_obj.grid(column=0, row=1, sticky=(W, N, E, S))
-        self.num_disp_fr.rowconfigure(1, weight=1)
+        self.data_disp_fr.grid(column=0, row=0, sticky=(W, N, E, S)) #, rowspan=7)
+        self.debug_clear_btn.grid(column=0, row=0, sticky=(W))
+        self.debug_disp_obj.grid(column=0, row=1, sticky=(W, N, E, S))
+        #self.num_disp_fr.rowconfigure(1, weight=1)
 
-        self.W_bus_fr.grid(column=1, row=0, sticky=(E))
-        self.W_bus_label.grid(column=0, row=0, sticky=(W))
-        self.W_bus_display.grid(column=0, row=1, sticky=(W, N, E, S))
-        self.W_bus_fr.rowconfigure(1, weight=1)
+        self.widget_disp_fr.grid(column=1, row=0, sticky=(W, N, E, S))
 
-        self.V_bus_fr.grid(column=1, row=1, sticky=(E))
+        self.V_bus_fr.grid(column=0, row=0, sticky=(W, N))
         self.V_bus_label.grid(column=0, row=0, sticky=(W))
         self.V_bus_display.grid(column=0, row=1, sticky=(W, N, E, S))
-        self.V_bus_fr.rowconfigure(1, weight=1)
+        #self.V_bus_fr.rowconfigure(1, weight=1)
 
-        self.A_bus_fr.grid(column=1, row=2, sticky=(E))
+        self.W_bus_fr.grid(column=0, row=1, sticky=(W, N))
+        self.W_bus_label.grid(column=0, row=0, sticky=(W))
+        self.W_bus_display.grid(column=0, row=1, sticky=(W, N, E, S))
+        #self.W_bus_fr.rowconfigure(1, weight=1)
+
+        self.A_bus_fr.grid(column=0, row=2, sticky=(W, N))
         self.A_bus_label.grid(column=0, row=0, sticky=(W))
         self.A_bus_display.grid(column=0, row=1, sticky=(W, N, E, S))
-        self.A_bus_fr.rowconfigure(1, weight=1)
+        #self.A_bus_fr.rowconfigure(1, weight=1)
 
-        self.state_fr.grid(column=1, row=3, sticky=(E))
-        self.state_label.grid(column=0, row=0, sticky=(W))
-        self.state_display.grid(column=0, row=1, sticky=(W, N, E, S))
-        self.state_fr.rowconfigure(1, weight=1)
-
-        self.depth_fr.grid(column=1, row=4, sticky=(E))
-        self.depth_label.grid(column=0, row=0, sticky=(W))
-        self.depth_display.grid(column=0, row=1, sticky=(W, N, E, S))
-        self.depth_fr.rowconfigure(1, weight=1)
-
-        self.speed_fr.grid(column=1, row=5, sticky=(E))
-        self.speed_label.grid(column=0, row=0, sticky=(W))
-        self.speed_display.grid(column=0, row=1, sticky=(W, N, E, S))
-        self.speed_fr.rowconfigure(1, weight=1)
-
-        self.A_bat_fr.grid(column=1, row=6, sticky=(E))
+        self.A_bat_fr.grid(column=0, row=3, sticky=(W, N))
         self.A_bat_label.grid(column=0, row=0, sticky=(W))
         self.A_bat_display.grid(column=0, row=1, sticky=(W, N, E, S))
-        self.A_bat_fr.rowconfigure(1, weight=1)
+        #self.A_bat_fr.rowconfigure(1, weight=1)
 
-        self.num_disp_fr.columnconfigure(0, weight=1)
-        self.num_disp_fr.rowconfigure(1, weight=1)
+        self.state_fr.grid(column=0, row=4, sticky=(W, N))
+        self.state_label.grid(column=0, row=0, sticky=(W))
+        self.state_display.grid(column=0, row=1, sticky=(W, N, E, S))
+        #self.state_fr.rowconfigure(1, weight=1)
+
+        self.depth_fr.grid(column=0, row=5, sticky=(W, N))
+        self.depth_label.grid(column=0, row=0, sticky=(W))
+        self.depth_display.grid(column=0, row=1, sticky=(W, N, E, S))
+        #self.depth_fr.rowconfigure(1, weight=1)
+
+        self.speed_fr.grid(column=0, row=6, sticky=(W, N))
+        self.speed_label.grid(column=0, row=0, sticky=(W))
+        self.speed_display.grid(column=0, row=1, sticky=(W, N, E, S))
+        #self.speed_fr.rowconfigure(1, weight=1)
+
+        self.data_disp_fr.columnconfigure(0, weight=1)
+        self.data_disp_fr.rowconfigure(1, weight=1)
 
     # START WINDOW
     def begin(self):
         self.root.update()
         #self.root.after_idle(self.update_display)
-        self.num_disp_obj.delete(1.0, END)
-        self.num_disp_obj.insert(1.0, "Group 21 - Bouyancy Energy Storage System (BESS)\n")
+        self.debug_disp_obj.delete(1.0, END)
+        self.debug_disp_obj.insert(1.0, "Group 21 - Bouyancy Energy Storage System (BESS)\n")
         self.root.mainloop()
 
     def create_command_request(self, value):
@@ -159,6 +167,15 @@ class BESS_control_panel:
 
     def is_new_command_available(self):
         return self.spi_rq_buffer_flag
+
+    def is_load_enabled(self):
+        return True if self.is_load_on.get() else False
+
+    def is_new_load_command_available(self):
+        return True if self.load_btn_update_flag else False
+
+    def load_btn_update_handled(self):
+        self.load_btn_update_flag = False
 
     def get_latest_command(self):
         returnValue = self.spi_rq_buffer
@@ -174,15 +191,15 @@ class BESS_control_panel:
             display_str += " " + "{:03d}".format(v)
         display_str += " ]\n"
 
-        self.num_disp_obj.insert("end", display_str)
-        self.num_disp_obj.see("end")
+        self.debug_disp_obj.insert("end", display_str)
+        self.debug_disp_obj.see("end")
 
         # set up data for display
         bus_voltage = ( (values[1] << 8) | values[2] ) / VOLTAGE_ADC_RATIO
 
-        bus_current = twos_complement( (values[3] << 8) | values[4] , 16 ) / CURRENT_ADC_RATIO
+        motor_current = twos_complement( (values[3] << 8) | values[4] , 16 ) / CURRENT_ADC_RATIO
 
-        bat_current = twos_complement( (values[5] << 8) | values[6] , 16 ) / CURRENT_ADC_RATIO
+        battery_current = twos_complement( (values[5] << 8) | values[6] , 16 ) / CURRENT_ADC_RATIO
 
         self.state = "state error"
         state_value_recieved = values[7]
@@ -205,7 +222,7 @@ class BESS_control_panel:
 
         depth = values[8]
         speed_rpm = (values[9] << 8) | values[10]
-        bus_power = bus_voltage * bus_current
+        motor_power = bus_voltage * motor_current
 
         # display values to designated text boxes
         self.W_bus_display.delete(1.0, END)
@@ -216,30 +233,41 @@ class BESS_control_panel:
         self.speed_display.delete(1.0, END)
         self.A_bat_display.delete(1.0, END)
 
-        self.W_bus_display.insert("end", "{:2.2f}".format(bus_power))
+        self.W_bus_display.insert("end", "{:2.2f}".format(motor_power))
         self.V_bus_display.insert("end", "{:2.2f}".format(bus_voltage))
-        self.A_bus_display.insert("end", "{:2.2f}".format(bus_current))
+        self.A_bus_display.insert("end", "{:2.2f}".format(motor_current))
         if self.state == "paused":
             self.state_display.insert("end", self.prev_state + "-")
         self.state_display.insert("end", str(self.state))
         self.depth_display.insert("end", str(depth))
         self.speed_display.insert("end", str(speed_rpm))
-        self.A_bat_display.insert("end", "{:2.2f}".format(bat_current))
+        self.A_bat_display.insert("end", "{:2.2f}".format(battery_current))
 
         #print("updated display")
         #self.root.after(1000, self.update_display)
 
     def pause_btn_handler(self):
-        print("handling pause button")
+        self.debug_disp_obj.insert("end", "pause button pressed\n")
+        self.debug_disp_obj.see("end")
         self.create_command_request(PAUSE_STATE)
 
     def generate_btn_handler(self):
-        print("handling generate button")
+        self.debug_disp_obj.insert("end", "generate button pressed\n")
+        self.debug_disp_obj.see("end")
         self.create_command_request(GENERATE_STATE)
 
     def store_btn_handler(self):
-        print("handling store button")
+        self.debug_disp_obj.insert("end", "store button pressed\n")
+        self.debug_disp_obj.see("end")
         self.create_command_request(STORING_STATE)
+
+    def load_btn_handler(self):
+        self.load_btn_update_flag = True
+        if self.is_load_on.get():
+            self.debug_disp_obj.insert("end", "load enabled\n")
+        else:
+            self.debug_disp_obj.insert("end", "load disabled\n")
+        self.debug_disp_obj.see("end")
 
 cntrl = BESS_control_panel()
 cntrl.begin()
