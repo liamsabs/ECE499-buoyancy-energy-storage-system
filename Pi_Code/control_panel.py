@@ -47,7 +47,10 @@ class BESS_control_panel:
         self.pause_btn = ttk.Button(self.controls_fr, text='PAUSE', command=self.pause_btn_handler)
         self.generate_btn = ttk.Button(self.controls_fr, text='GENERATE', command=self.generate_btn_handler)
         self.store_btn = ttk.Button(self.controls_fr, text='STORE', command=self.store_btn_handler)
-        self.load_btn = ttk.Checkbutton(self.controls_fr, text="<- ENABLE LOAD", variable=self.is_load_on, onvalue=1, offvalue=0, command=self.load_btn_handler)
+
+        self.load_btn_fr = ttk.Frame(self.controls_fr, padding=(0, 0, 0, 0), relief='')
+        self.load_btn_label = ttk.Label(self.load_btn_fr, padding=(0, 0, 0, 0), text="LOAD ENABLED:", justify='left', anchor='w', relief='')
+        self.load_btn = ttk.Checkbutton(self.load_btn_fr, text="", variable=self.is_load_on, onvalue=1, offvalue=0, command=self.load_btn_handler)
 
         # DISPLAY
 
@@ -87,7 +90,7 @@ class BESS_control_panel:
         self.depth_display = Text(self.depth_fr, wrap='word', padx=widget_disp_pad, pady=widget_disp_pad, width=widget_disp_width, height=widget_disp_height)
 
         self.speed_fr = ttk.Frame(self.widget_disp_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', height=100)
-        self.speed_label = ttk.Label(self.speed_fr, padding=(0, 0, 0, 0), text="SPEED (RPM):", justify='left', anchor='w', relief='')
+        self.speed_label = ttk.Label(self.speed_fr, padding=(0, 0, 0, 0), text="MOTOR SPEED (RPM):", justify='left', anchor='w', relief='')
         self.speed_display = Text(self.speed_fr, wrap='word', padx=widget_disp_pad, pady=widget_disp_pad, width=widget_disp_width, height=widget_disp_height)
 
         # GRID
@@ -101,7 +104,11 @@ class BESS_control_panel:
         self.pause_btn.grid(column=0, row=0, sticky=(W))
         self.generate_btn.grid(column=1, row=0, sticky=(W))
         self.store_btn.grid(column=2, row=0, sticky=(W))
-        self.load_btn.grid(column=3, row=0, sticky=(E))
+
+        self.load_btn_fr.grid(column=3, row=0, sticky=(E))
+        self.load_btn_label.grid(column=0, row=0, sticky=(E))
+        self.load_btn.grid(column=1, row=0, sticky=(E))
+        self.controls_fr.columnconfigure(0, weight=1)
 
         self.display_fr.grid(column=0, row=1, sticky=(W, N, E, S))
         self.display_fr.columnconfigure(0, weight=1)
