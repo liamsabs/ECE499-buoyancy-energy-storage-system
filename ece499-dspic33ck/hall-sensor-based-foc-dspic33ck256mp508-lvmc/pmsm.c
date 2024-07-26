@@ -1004,17 +1004,20 @@ void prepareTxData(void){
     txBuffer[2] = (IbusSend >> 8)&0xFF;
     txBuffer[3] = (IbusSend)&0xFF;
     
-    txBuffer[6] = (IbatSend>>8)&0xFF;
-    txBuffer[7] = (IbatSend)&0xFF;
+    txBuffer[4] = (IbatSend>>8)&0xFF;
+    txBuffer[5] = (IbatSend)&0xFF;
         
     //load system state into transmit buffer
-    txBuffer[4] = (uint8_t)system.state&0xFF;
+    txBuffer[6] = (uint8_t)system.state&0xFF;
     
     //Prepare the motor position as a percentage
     uint32_t Pos = __builtin_mulss(100,system.position);
     Pos = __builtin_divud(Pos, STORING_DONE_POS );
-    txBuffer[5] = (uint8_t)Pos&0xFF;
+    txBuffer[7] = (uint8_t)Pos&0xFF;
     
+    int16_t SpeedSend= __builtin_divsd(mcappData.SpeedHall,6);
+    txBuffer[8] = (SpeedSend>>8)&0xFF;
+    txBuffer[9] = (SpeedSend)&0xFF;
 }
 
 
