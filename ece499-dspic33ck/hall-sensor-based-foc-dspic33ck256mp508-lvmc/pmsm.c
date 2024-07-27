@@ -103,7 +103,7 @@ uint8_t RXFlag;
 
 #define SPI_RX_BUFFER_SIZE  1
 /* SPI1 Transmit Buffer Size*/
-#define SPI_TX_BUFFER_SIZE  9 
+#define SPI_TX_BUFFER_SIZE  10 
 
 uint8_t FirstTime; /*flag to catch if it's the first time sending data. This is so we know if we're in startup and can measure battery offset*/
 
@@ -555,14 +555,14 @@ void __attribute__((interrupt, no_auto_psv)) HAL_MC1HallStateChangeInterrupt ()
     mcappData.hallCorrectionFactor = mcappData.hallThetaError >> HALL_CORRECTION_DIVISOR;
     mcappData.hallCorrectionCounter = HALL_CORRECTION_STEPS;
     
-   /* if(uGF.bits.MotorState == 0b01){
+    if(uGF.bits.MotorState == 0b01){
         
         if(++system.position >= STORING_DONE_POS){ //increments then checks if end of storing
             
             system.state = STORED; //set state to stored
             uGF.bits.MotorState=0b11;
             /*TODO: Engage Locking Mechanism*/
-    /*
+    
             prepareTxData(); //acquire sensor and system state data
             SPITrigger = 1; //set PORTE1 high (MicroBus_A_AN)
             
@@ -571,7 +571,7 @@ void __attribute__((interrupt, no_auto_psv)) HAL_MC1HallStateChangeInterrupt ()
         
     }else if (uGF.bits.MotorState == 0b10){
         
-        /*if(--system.position <= GEN_DONE_POS){ //decrements then checks if end of generating
+        if(--system.position <= GEN_DONE_POS){ //decrements then checks if end of generating
             
             system.state = IDLE; // set state to IDLE
             uGF.bits.MotorState=0b11;
@@ -579,8 +579,8 @@ void __attribute__((interrupt, no_auto_psv)) HAL_MC1HallStateChangeInterrupt ()
             prepareTxData(); //acquire sensor and system state data
             SPITrigger = 1; //set PORTE1 high (MicroBus_A_AN)
             
-        }*/
-//    }
+        }
+      }
 
     HAL_MC1HallStateChangeInterruptFlagClear();
 }
@@ -1000,6 +1000,8 @@ void prepareTxData(void){
     txBuffer[2] = (IbusSend >> 8)&0xFF;
     txBuffer[3] = (IbusSend)&0xFF;
     
+    
+    IbatSend = IbatSend - (uint16_t)64500;
     txBuffer[4] = (IbatSend>>8)&0xFF;
     txBuffer[5] = (IbatSend)&0xFF;
         

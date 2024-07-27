@@ -67,7 +67,7 @@ controllers, tuning mode will disable the speed PI controller */
 /* The following values are given in the xls attached file */
     
 /* Update the following for total number of Revolutions until the system reaches the bottom*/
-#define TOTAL_REVS 30000
+#define TOTAL_REVS 100000
 #define STORING_DONE_POS TOTAL_REVS*30
 
 /* Storing Done Threshold for the system to know it should stop generating*/
@@ -78,11 +78,11 @@ controllers, tuning mode will disable the speed PI controller */
 /* Motor's number of pole pairs */
 #define NOPOLESPAIRS 5
 /* Nominal speed of the motor in RPM */
-#define NOMINAL_SPEED_RPM    2000 
+#define NOMINAL_SPEED_RPM    2804 
 /* Maximum speed of the motor in RPM - given by the motor's manufacturer */
-#define MAXIMUM_SPEED_RPM    3500 
+#define MAXIMUM_SPEED_RPM    3644
 
-#define TARGET_SPEED_RPM_MOT 3287
+#define TARGET_SPEED_RPM_MOT 3209
 
 #define TARGET_SPEED_RPM_GEN 3000
 
