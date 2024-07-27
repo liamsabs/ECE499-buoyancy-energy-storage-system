@@ -238,7 +238,7 @@ class BESS_control_panel:
             self.state = "state error"
 
         depth = values[8]
-        speed_rpm = (values[9] << 8) | values[10]
+        speed_rpm = twos_complement( (values[9] << 8) | values[10] , 16 )
 
         # display values to designated text boxes
         self.V_bus_display.delete(1.0, END)
