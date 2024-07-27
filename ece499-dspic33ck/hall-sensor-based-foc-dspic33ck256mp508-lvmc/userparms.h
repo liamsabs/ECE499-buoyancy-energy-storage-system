@@ -67,8 +67,8 @@ controllers, tuning mode will disable the speed PI controller */
 /* The following values are given in the xls attached file */
     
 /* Update the following for total number of Revolutions until the system reaches the bottom*/
-#define TOTAL_REVS 100000
-#define STORING_DONE_POS TOTAL_REVS*30
+#define TOTAL_REVS 30000
+#define STORING_DONE_POS 900000 //REVS*30 (hall transitions per pole)
 
 /* Storing Done Threshold for the system to know it should stop generating*/
 #define GEN_DONE_POS 50
@@ -86,17 +86,19 @@ controllers, tuning mode will disable the speed PI controller */
 
 #define TARGET_SPEED_RPM_GEN 3000
 
+/*Battery offset value*/
+#define BAT_ADC_OFFSET -15642
 /* The following values are given in the xls attached file */
-#define NORM_CURRENT_CONST     0.000305
+#define NORM_CURRENT_CONST     0.000671
 /* normalized ls/dt value */
-#define NORM_LSDTBASE 1207
+#define NORM_LSDTBASE 8129
 /* normalized rs value */
-#define NORM_RS  860
+#define NORM_RS  9044
 /* the calculation of Rs gives a value exceeding the Q15 range so,
  the normalized value is further divided by 2 to fit the 32768 limit
  this is taken care in the estim.c where the value is implied
  normalized inv kfi at base speed */
-#define NORM_INVKFIBASE  9484
+#define NORM_INVKFIBASE  9290
 /* the calculation of InvKfi gives a value which not exceed the Q15 limit
    to assure that an increase of the term with 5 is possible in the lookup table
    for high flux weakening the normalized is initially divided by 2
@@ -108,9 +110,9 @@ controllers, tuning mode will disable the speed PI controller */
 /* di = i(t1)-i(t2) limitation
  high speed limitation, for dt 50us 
  the value can be taken from attached xls file */
-#define D_ILIMIT_HS 956
+#define D_ILIMIT_HS 995
 /* low speed limitation, for dt 8*50us */
-#define D_ILIMIT_LS 4369
+#define D_ILIMIT_LS 7010
 
 /**********************  support xls file definitions end *********************/
 

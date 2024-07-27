@@ -58,12 +58,13 @@
 #include "spi1.h"
 #include "utilities.h"
 
-#define BAT_ADC_OFFSET -15750
+
 
 volatile UGF_T uGF;
 
 //TEMPS
 int16_t IbusSend;
+int16_t IbatSend;
         
 
 
@@ -736,6 +737,7 @@ void __attribute__((__interrupt__,no_auto_psv)) _ADCInterrupt()
   
     else
     {
+        mcappData.SpeedHall=0;
         INVERTERA_PWM_TRIGA = ADC_SAMPLING_POINT;
         pwmDutycycle.dutycycle3 = MIN_DUTY;
         pwmDutycycle.dutycycle2 = MIN_DUTY;
@@ -992,16 +994,14 @@ void prepareTxData(void){
     txBuffer[1] = (uint8_t)(measureInputs.dcBusVoltage&0xFF);
         
     //load bus current into transmit buffer, this is an averaging of all the currents measured, negative cause current sensor is backwards
-    IbusSend=-(__builtin_divsd(measureInputs.current.sumIbusext,ISRCounter)-measureInputs.current.offsetIbusext);
-    int16_t IbatSend= __builtin_divsd(measureInputs.current.sumIbat,ISRCounter)-BAT_ADC_OFFSET;
+    IbusSend=__builtin_divsd(measureInputs.current.sumIbusext,ISRCounter)-measureInputs.current.offsetIbusext;
+    IbatSend= -(__builtin_divsd(measureInputs.current.sumIbat,ISRCounter)-BAT_ADC_OFFSET);
     //Reset the current sums
     measureInputs.current.sumIbusext=0;
     measureInputs.current.sumIbat=0;
     txBuffer[2] = (IbusSend >> 8)&0xFF;
     txBuffer[3] = (IbusSend)&0xFF;
     
-    
-    IbatSend = IbatSend - (uint16_t)64500;
     txBuffer[4] = (IbatSend>>8)&0xFF;
     txBuffer[5] = (IbatSend)&0xFF;
         
@@ -1009,8 +1009,8 @@ void prepareTxData(void){
     txBuffer[6] = (uint8_t)system.state&0xFF;
     
     //Prepare the motor position as a percentage
-    uint32_t Pos = __builtin_mulss(100,system.position);
-    Pos = __builtin_divud(Pos, STORING_DONE_POS );
+    
+    float Pos = 100*((float)system.position/STORING_DONE_POS);
     txBuffer[7] = (uint8_t)Pos&0xFF;
     
     int16_t SpeedSend= __builtin_divsd(mcappData.SpeedHall,6);
