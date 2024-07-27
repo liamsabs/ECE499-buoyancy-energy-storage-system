@@ -67,7 +67,7 @@ controllers, tuning mode will disable the speed PI controller */
 /* The following values are given in the xls attached file */
     
 /* Update the following for total number of Revolutions until the system reaches the bottom*/
-#define TOTAL_REVS 3000
+#define TOTAL_REVS 30000
 #define STORING_DONE_POS TOTAL_REVS*30
 
 /* Storing Done Threshold for the system to know it should stop generating*/
@@ -81,6 +81,10 @@ controllers, tuning mode will disable the speed PI controller */
 #define NOMINAL_SPEED_RPM    2000 
 /* Maximum speed of the motor in RPM - given by the motor's manufacturer */
 #define MAXIMUM_SPEED_RPM    3500 
+
+#define TARGET_SPEED_RPM_MOT 3287
+
+#define TARGET_SPEED_RPM_GEN 3000
 
 /* The following values are given in the xls attached file */
 #define NORM_CURRENT_CONST     0.000305
@@ -119,9 +123,9 @@ controllers, tuning mode will disable the speed PI controller */
  lock time is the time needed for motor's poles alignment 
 before the open loop speed ramp up */
 /* This number is: 20,000 is 1 second. */
-#define LOCK_TIME 4000 
+#define LOCK_TIME 8000 
 /* Open loop speed ramp up end value Value in RPM*/
-#define END_SPEED_RPM 400 
+#define END_SPEED_RPM 1000 
 /* Open loop acceleration */
 #define OPENLOOP_RAMPSPEED_INCREASERATE 50
 /* Open loop q current setup - */
@@ -134,6 +138,9 @@ before the open loop speed ramp up */
 #define MAXIMUMSPEED_ELECTR MAXIMUM_SPEED_RPM*NOPOLESPAIRS
 /* Nominal motor speed converted into electrical speed */
 #define NOMINALSPEED_ELECTR NOMINAL_SPEED_RPM*NOPOLESPAIRS
+    
+#define TARGET_SPEED_ELECTR_MOT NOPOLESPAIRS*TARGET_SPEED_RPM_MOT
+#define TARGET_SPEED_ELECTR_GEN -NOPOLESPAIRS*TARGET_SPEED_RPM_GEN
 
 /* End speed converted to fit the startup ramp */
 #define END_SPEED (END_SPEED_RPM * NOPOLESPAIRS * LOOPTIME_SEC * 65536 / 60.0)*1024

@@ -381,12 +381,7 @@ void DoControl( void )
             ctrlParm.qVelRef = Q_CURRENT_REF_OPENLOOP;
         }
         else if(uGF.bits.MotorState==0b10){
-           ctrlParm.targetSpeed = -((__builtin_mulss(measureInputs.potValue,
-                    NOMINALSPEED_ELECTR-ENDSPEED_ELECTR)>>15) +
-                    ENDSPEED_ELECTR);
-            #ifdef NOMECH
-            ctrlParm.targetSpeed=-500;
-            #endif
+           ctrlParm.qVelRef = -Q_CURRENT_REF_OPENLOOP;
         }
         
         /* q current reference is equal to the velocity reference 
@@ -411,48 +406,50 @@ void DoControl( void )
         
         //Maybe will remove for our speed, replace potValue with our actual speed
         if(uGF.bits.MotorState==0b01){
-            ctrlParm.targetSpeed = (__builtin_mulss(measureInputs.potValue,
-                    NOMINALSPEED_ELECTR-ENDSPEED_ELECTR)>>15) +
-                    ENDSPEED_ELECTR; 
+            ctrlParm.targetSpeed = TARGET_SPEED_ELECTR_MOT; 
         }
         else if(uGF.bits.MotorState==0b10){
-            ctrlParm.targetSpeed = -((__builtin_mulss(measureInputs.potValue,
-                    NOMINALSPEED_ELECTR-ENDSPEED_ELECTR)>>15) +
-                    ENDSPEED_ELECTR); 
+            ctrlParm.targetSpeed = TARGET_SPEED_ELECTR_GEN; 
             #ifdef NOMECH
-                ctrlParm.targetSpeed = 0;
+                ctrlParm.targetSpeed = -4000;
             #endif
         }
         
-        //Only execute speed control ever SPEEDREFRAMP_COUNT Itterations
-        if  (ctrlParm.speedRampCount < SPEEDREFRAMP_COUNT)
-        {
-           ctrlParm.speedRampCount++; 
-        }
-        else
-        {
-            /* Ramp generator to limit the change of the speed reference
-              the rate of change is defined by CtrlParm.qRefRamp */
-            ctrlParm.qDiff = ctrlParm.qVelRef - ctrlParm.targetSpeed;
-            /* Speed Ref Ramp */
-            if (ctrlParm.qDiff < 0)
+        //Execute speed ramp only if we are in motoring mode, in gen mode it doesn't really matter
+        if(uGF.bits.MotorState==0b01){
+            if  (ctrlParm.speedRampCount < SPEEDREFRAMP_COUNT)
             {
-                /* Set this cycle reference as the sum of
-                previously calculated one plus the reference ramp value */
-                ctrlParm.qVelRef = ctrlParm.qVelRef+ctrlParm.qRefRamp;
+               ctrlParm.speedRampCount++; 
             }
             else
             {
-                /* Same as above for speed decrease */
-                ctrlParm.qVelRef = ctrlParm.qVelRef-ctrlParm.qRefRamp;
+                /* Ramp generator to limit the change of the speed reference
+                  the rate of change is defined by CtrlParm.qRefRamp */
+                ctrlParm.qDiff = ctrlParm.qVelRef - ctrlParm.targetSpeed;
+                /* Speed Ref Ramp */
+                if (ctrlParm.qDiff < 0)
+                {
+                    /* Set this cycle reference as the sum of
+                    previously calculated one plus the reference ramp value */
+                    ctrlParm.qVelRef = ctrlParm.qVelRef+ctrlParm.qRefRamp;
+                }
+                else
+                {
+                    /* Same as above for speed decrease */
+                    ctrlParm.qVelRef = ctrlParm.qVelRef-ctrlParm.qRefRamp;
+                }
+                /* If difference less than half of ref ramp, set reference
+                directly from the pot */
+                if (_Q15abs(ctrlParm.qDiff) < (ctrlParm.qRefRamp << 1))
+                {
+                    ctrlParm.qVelRef = ctrlParm.targetSpeed;
+                }
+                ctrlParm.speedRampCount = 0;
             }
-            /* If difference less than half of ref ramp, set reference
-            directly from the pot */
-            if (_Q15abs(ctrlParm.qDiff) < (ctrlParm.qRefRamp << 1))
-            {
-                ctrlParm.qVelRef = ctrlParm.targetSpeed;
-            }
-            ctrlParm.speedRampCount = 0;
+        }
+        //If we're in gen mode we want it to set it's Ve1 ref to the actual speed
+        else if(uGF.bits.MotorState==0b10){
+            ctrlParm.qVelRef = ctrlParm.targetSpeed;
         }
         if (uGF.bits.ChangeMode)
         {
@@ -461,12 +458,11 @@ void DoControl( void )
             piInputOmega.piState.integrator = (int32_t)ctrlParm.qVqRef << 13;
             if(uGF.bits.MotorState==0b01){
                 ctrlParm.qVelRef = ENDSPEED_ELECTR;
-                #
             }
             else if(uGF.bits.MotorState==0b10){
                 ctrlParm.qVelRef = -ENDSPEED_ELECTR;   
                 #ifdef NOMECH
-                ctrlParm.qVelRef = 0;
+                ctrlParm.qVelRef = -4000;
                 #endif
             }
         }
@@ -700,10 +696,10 @@ void __attribute__((__interrupt__,no_auto_psv)) _ADCInterrupt()
         }
         //Otherwise it's not backwards so we good
         else if (uGF.bits.MotorState==0b10){
-            mcappData.phaseInc = -__builtin_divud((uint32_t)PHASE_INC_MULTI,
+            mcappData.phaseInc = -(int)__builtin_divud((uint32_t)PHASE_INC_MULTI,
                                         (unsigned int)(mcappData.periodFilter));
 
-            mcappData.SpeedHall = -__builtin_divud((uint32_t)SPEED_MULTI, 
+            mcappData.SpeedHall = -(int)__builtin_divud((uint32_t)SPEED_MULTI, 
                                         (unsigned int)(mcappData.periodFilter));
         }
         /* if open loop */
@@ -995,8 +991,8 @@ void prepareTxData(void){
     txBuffer[0] = (uint8_t)(measureInputs.dcBusVoltage  >> 8)&0xFF;
     txBuffer[1] = (uint8_t)(measureInputs.dcBusVoltage&0xFF);
         
-    //load bus current into transmit buffer, this is an averaging of all the currents measured
-    IbusSend=(__builtin_divsd(measureInputs.current.sumIbusext,ISRCounter)-measureInputs.current.offsetIbusext);
+    //load bus current into transmit buffer, this is an averaging of all the currents measured, negative cause current sensor is backwards
+    IbusSend=-(__builtin_divsd(measureInputs.current.sumIbusext,ISRCounter)-measureInputs.current.offsetIbusext);
     int16_t IbatSend= __builtin_divsd(measureInputs.current.sumIbat,ISRCounter)-BAT_ADC_OFFSET;
     //Reset the current sums
     measureInputs.current.sumIbusext=0;
@@ -1055,11 +1051,16 @@ void CalculateParkAngle(void)
             motorStartUpData.startupLock += 1;
         }
         /* Then ramp up till the end speed */
-        else if (motorStartUpData.startupRamp < END_SPEED_RPM)
+        else if (motorStartUpData.startupRamp < END_SPEED_RPM && uGF.bits.MotorState==0b01)
         {
             motorStartUpData.startupRamp += OPENLOOP_RAMPSPEED_INCREASERATE;
         }
         /* Switch to closed loop */
+        else if (motorStartUpData.startupRamp < -END_SPEED_RPM && uGF.bits.MotorState==0b10)
+        {
+            motorStartUpData.startupRamp -= OPENLOOP_RAMPSPEED_INCREASERATE;
+        }
+        
         else 
         {
                 #ifndef OPEN_LOOP_FUNCTIONING

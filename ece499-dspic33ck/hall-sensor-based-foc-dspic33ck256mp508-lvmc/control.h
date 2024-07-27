@@ -114,7 +114,7 @@ typedef struct
 {
     uint16_t timerValue;
     uint16_t sector;
-    uint16_t SpeedHall;
+    int16_t SpeedHall;
     /* angle of estimation */
     int16_t HallTheta;    
 
