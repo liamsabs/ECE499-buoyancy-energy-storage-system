@@ -77,6 +77,10 @@ class BESS_control_panel:
         self.A_bus_label = ttk.Label(self.A_bus_fr, padding=(0, 0, 0, 0), text="MOTOR CURRENT (A):", justify='left', anchor='w', relief='')
         self.A_bus_display = Text(self.A_bus_fr, wrap='word', padx=widget_disp_pad, pady=widget_disp_pad, width=widget_disp_width, height=widget_disp_height)
 
+        self.W_bat_fr = ttk.Frame(self.widget_disp_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', height=100)
+        self.W_bat_label = ttk.Label(self.W_bat_fr, padding=(0, 0, 0, 0), text="BATTERY POWER (W):", justify='left', anchor='w', relief='')
+        self.W_bat_display = Text(self.W_bat_fr, wrap='word', padx=widget_disp_pad, pady=widget_disp_pad, width=widget_disp_width, height=widget_disp_height)
+
         self.A_bat_fr = ttk.Frame(self.widget_disp_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', height=100)
         self.A_bat_label = ttk.Label(self.A_bat_fr, padding=(0, 0, 0, 0), text="BATTERY CURRENT (A):", justify='left', anchor='w', relief='')
         self.A_bat_display = Text(self.A_bat_fr, wrap='word', padx=widget_disp_pad, pady=widget_disp_pad, width=widget_disp_width, height=widget_disp_height)
@@ -137,22 +141,27 @@ class BESS_control_panel:
         self.A_bus_display.grid(column=0, row=1, sticky=(W, N, E, S))
         #self.A_bus_fr.rowconfigure(1, weight=1)
 
-        self.A_bat_fr.grid(column=0, row=3, sticky=(W, N))
+        self.W_bat_fr.grid(column=0, row=3, sticky=(W, N))
+        self.W_bat_label.grid(column=0, row=0, sticky=(W))
+        self.W_bat_display.grid(column=0, row=1, sticky=(W, N, E, S))
+        #self.W_bat_fr.rowconfigure(1, weight=1)
+
+        self.A_bat_fr.grid(column=0, row=4, sticky=(W, N))
         self.A_bat_label.grid(column=0, row=0, sticky=(W))
         self.A_bat_display.grid(column=0, row=1, sticky=(W, N, E, S))
         #self.A_bat_fr.rowconfigure(1, weight=1)
 
-        self.state_fr.grid(column=0, row=4, sticky=(W, N))
+        self.state_fr.grid(column=0, row=5, sticky=(W, N))
         self.state_label.grid(column=0, row=0, sticky=(W))
         self.state_display.grid(column=0, row=1, sticky=(W, N, E, S))
         #self.state_fr.rowconfigure(1, weight=1)
 
-        self.depth_fr.grid(column=0, row=5, sticky=(W, N))
+        self.depth_fr.grid(column=0, row=6, sticky=(W, N))
         self.depth_label.grid(column=0, row=0, sticky=(W))
         self.depth_display.grid(column=0, row=1, sticky=(W, N, E, S))
         #self.depth_fr.rowconfigure(1, weight=1)
 
-        self.speed_fr.grid(column=0, row=6, sticky=(W, N))
+        self.speed_fr.grid(column=0, row=7, sticky=(W, N))
         self.speed_label.grid(column=0, row=0, sticky=(W))
         self.speed_display.grid(column=0, row=1, sticky=(W, N, E, S))
         #self.speed_fr.rowconfigure(1, weight=1)
@@ -205,8 +214,9 @@ class BESS_control_panel:
         bus_voltage = ( (values[1] << 8) | values[2] ) / VOLTAGE_ADC_RATIO
 
         motor_current = twos_complement( (values[3] << 8) | values[4] , 16 ) / CURRENT_ADC_RATIO
-
         battery_current = twos_complement( (values[5] << 8) | values[6] , 16 ) / CURRENT_ADC_RATIO
+        motor_power = bus_voltage * motor_current
+        battery_power = bus_voltage * battery_current
 
         self.state = "state error"
         state_value_recieved = values[7]
@@ -229,26 +239,27 @@ class BESS_control_panel:
 
         depth = values[8]
         speed_rpm = (values[9] << 8) | values[10]
-        motor_power = bus_voltage * motor_current
 
         # display values to designated text boxes
-        self.W_bus_display.delete(1.0, END)
         self.V_bus_display.delete(1.0, END)
+        self.W_bus_display.delete(1.0, END)
         self.A_bus_display.delete(1.0, END)
+        self.W_bat_display.delete(1.0, END)
+        self.A_bat_display.delete(1.0, END)
         self.state_display.delete(1.0, END)
         self.depth_display.delete(1.0, END)
         self.speed_display.delete(1.0, END)
-        self.A_bat_display.delete(1.0, END)
 
-        self.W_bus_display.insert("end", "{:2.2f}".format(motor_power))
         self.V_bus_display.insert("end", "{:2.2f}".format(bus_voltage))
+        self.W_bus_display.insert("end", "{:2.2f}".format(motor_power))
         self.A_bus_display.insert("end", "{:2.2f}".format(motor_current))
+        self.W_bat_display.insert("end", "{:2.2f}".format(battery_power))
+        self.A_bat_display.insert("end", "{:2.2f}".format(battery_current))
         if self.state == "paused":
             self.state_display.insert("end", self.prev_state + "-")
         self.state_display.insert("end", str(self.state))
         self.depth_display.insert("end", str(depth))
         self.speed_display.insert("end", str(speed_rpm))
-        self.A_bat_display.insert("end", "{:2.2f}".format(battery_current))
 
         #print("updated display")
         #self.root.after(1000, self.update_display)
