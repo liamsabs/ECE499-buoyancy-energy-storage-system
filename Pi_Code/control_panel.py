@@ -10,8 +10,8 @@ DATA_RQ_COMMAND = 0x04
 IDLE_STATE = 0x05
 STORED_STATE = 0x06
 
-VOLTAGE_ADC_RATIO = 459.596
-CURRENT_ADC_RATIO = 054.067
+VOLTAGE_ADC_RATIO = 0459.596
+CURRENT_ADC_RATIO = 1310.721
 
 # computes two's complement value of "value" being an int of "num_bits" bit length
 def twos_complement(value, num_bits):
