@@ -1013,7 +1013,7 @@ void prepareTxData(void){
     float Pos = 100*((float)system.position/STORING_DONE_POS);
     txBuffer[7] = (uint8_t)Pos&0xFF;
     
-    int16_t SpeedSend= __builtin_divsd(mcappData.SpeedHall,6);
+    int16_t SpeedSend= __builtin_divsd(mcappData.SpeedHall,NOPOLESPAIRS);
     txBuffer[8] = (SpeedSend>>8)&0xFF;
     txBuffer[9] = (SpeedSend)&0xFF;
 }
