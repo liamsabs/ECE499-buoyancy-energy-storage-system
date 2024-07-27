@@ -276,5 +276,5 @@ class BESS_control_panel:
             self.debug_disp_obj.insert("end", "load disabled\n")
         self.debug_disp_obj.see("end")
 
-cntrl = BESS_control_panel()
-cntrl.begin()
+#cntrl = BESS_control_panel()
+#cntrl.begin()
