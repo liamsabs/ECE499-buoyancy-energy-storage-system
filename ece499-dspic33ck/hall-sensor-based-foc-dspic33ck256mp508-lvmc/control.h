@@ -74,7 +74,7 @@ typedef struct
 typedef struct
 {
     /* Start up ramp in open loop. */
-    uint32_t startupRamp;
+    int32_t startupRamp;
     /* counter that is incremented in CalculateParkAngle() up to LOCK_TIME,*/
     uint16_t startupLock;
     /* Start up ramp increment */

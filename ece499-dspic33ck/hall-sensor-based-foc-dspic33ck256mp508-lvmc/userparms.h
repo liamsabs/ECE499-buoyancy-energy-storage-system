@@ -35,6 +35,8 @@
 #ifndef USERPARMS_H
 #define USERPARMS_H
 
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -60,6 +62,8 @@ extern "C" {
 controllers, tuning mode will disable the speed PI controller */
 #undef TORQUE_MODE
     
+#define REVERSE -1
+    
 #define INTERNAL_OPAMP_CONFIG    
 
 /****************************** Motor Parameters ******************************/
@@ -68,7 +72,7 @@ controllers, tuning mode will disable the speed PI controller */
     
 /* Update the following for total number of Revolutions until the system reaches the bottom*/
 #define TOTAL_REVS 30000
-#define STORING_DONE_POS 900000 //REVS*30 (hall transitions per pole)
+#define STORING_DONE_POS TOTAL_REVS*30
 
 /* Storing Done Threshold for the system to know it should stop generating*/
 #define GEN_DONE_POS 50
@@ -77,28 +81,30 @@ controllers, tuning mode will disable the speed PI controller */
     
 /* Motor's number of pole pairs */
 #define NOPOLESPAIRS 5
-/* Nominal speed of the motor in RPM */
 #define NOMINAL_SPEED_RPM    2804 
 /* Maximum speed of the motor in RPM - given by the motor's manufacturer */
 #define MAXIMUM_SPEED_RPM    3644
 
-#define TARGET_SPEED_RPM_MOT 3209
+#define TARGET_SPEED_RPM_MOT 2500
 
-#define TARGET_SPEED_RPM_GEN 3000
+#define TARGET_SPEED_RPM_GEN 1000
 
-/*Battery offset value*/
+#define TARGET
+    
+    
 #define BAT_ADC_OFFSET -15642
+    
 /* The following values are given in the xls attached file */
-#define NORM_CURRENT_CONST     0.000671
+#define NORM_CURRENT_CONST     0.000305
 /* normalized ls/dt value */
-#define NORM_LSDTBASE 8129
+#define NORM_LSDTBASE 1207
 /* normalized rs value */
-#define NORM_RS  9044
+#define NORM_RS  860
 /* the calculation of Rs gives a value exceeding the Q15 range so,
  the normalized value is further divided by 2 to fit the 32768 limit
  this is taken care in the estim.c where the value is implied
  normalized inv kfi at base speed */
-#define NORM_INVKFIBASE  9290
+#define NORM_INVKFIBASE  9484
 /* the calculation of InvKfi gives a value which not exceed the Q15 limit
    to assure that an increase of the term with 5 is possible in the lookup table
    for high flux weakening the normalized is initially divided by 2
@@ -110,9 +116,9 @@ controllers, tuning mode will disable the speed PI controller */
 /* di = i(t1)-i(t2) limitation
  high speed limitation, for dt 50us 
  the value can be taken from attached xls file */
-#define D_ILIMIT_HS 995
+#define D_ILIMIT_HS 956
 /* low speed limitation, for dt 8*50us */
-#define D_ILIMIT_LS 7010
+#define D_ILIMIT_LS 4369
 
 /**********************  support xls file definitions end *********************/
 
@@ -125,29 +131,30 @@ controllers, tuning mode will disable the speed PI controller */
  lock time is the time needed for motor's poles alignment 
 before the open loop speed ramp up */
 /* This number is: 20,000 is 1 second. */
-#define LOCK_TIME 8000 
+#define LOCK_TIME 4000 
 /* Open loop speed ramp up end value Value in RPM*/
-#define END_SPEED_RPM 1000 
+#define END_SPEED_RPM 200 
 /* Open loop acceleration */
 #define OPENLOOP_RAMPSPEED_INCREASERATE 50
 /* Open loop q current setup - */
-#define Q_CURRENT_REF_OPENLOOP NORM_CURRENT(0.4)
+#define Q_CURRENT_REF_OPENLOOP REVERSE*NORM_CURRENT(0.4)
 
 /* Specify Over Current Limit - DC BUS */
 #define Q15_OVER_CURRENT_THRESHOLD NORM_CURRENT(10)
+    
 
 /* Maximum motor speed converted into electrical speed */
 #define MAXIMUMSPEED_ELECTR MAXIMUM_SPEED_RPM*NOPOLESPAIRS
 /* Nominal motor speed converted into electrical speed */
 #define NOMINALSPEED_ELECTR NOMINAL_SPEED_RPM*NOPOLESPAIRS
     
-#define TARGET_SPEED_ELECTR_MOT NOPOLESPAIRS*TARGET_SPEED_RPM_MOT
-#define TARGET_SPEED_ELECTR_GEN -NOPOLESPAIRS*TARGET_SPEED_RPM_GEN
+#define TARGET_SPEED_ELECTR_MOT REVERSE*NOPOLESPAIRS*TARGET_SPEED_RPM_MOT
+#define TARGET_SPEED_ELECTR_GEN -REVERSE*NOPOLESPAIRS*TARGET_SPEED_RPM_GEN
 
 /* End speed converted to fit the startup ramp */
 #define END_SPEED (END_SPEED_RPM * NOPOLESPAIRS * LOOPTIME_SEC * 65536 / 60.0)*1024
 /* End speed of open loop ramp up converted into electrical speed */
-#define ENDSPEED_ELECTR END_SPEED_RPM*NOPOLESPAIRS
+#define ENDSPEED_ELECTR REVERSE*END_SPEED_RPM*NOPOLESPAIRS
     
 /* In case of the potentiometer speed reference, a reference ramp
 is needed for assuring the motor can follow the reference imposed /
