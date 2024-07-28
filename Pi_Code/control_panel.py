@@ -299,8 +299,8 @@ class BESS_control_panel:
         self.state_display.insert("end", str(self.state))
         self.depth_display.insert("end", str(depth))
         self.speed_display.insert("end", str(speed_rpm))
-        self.energy_used_display.insert("end", str(self.energy_used))
-        self.energy_generated_display.insert("end", str(self.energy_generated))
+        self.energy_used_display.insert("end", "{:4.2f}".format(self.energy_used))
+        self.energy_generated_display.insert("end", "{:4.2f}".format(self.energy_generated))
 
         #print("updated display")
         #self.root.after(1000, self.update_display)
