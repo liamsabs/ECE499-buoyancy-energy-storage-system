@@ -66,6 +66,7 @@ volatile UGF_T uGF;
 int16_t IbusSend;
 int16_t IbatSend;
         
+double Pos;
 
 
 CTRL_PARM_T ctrlParm;
@@ -1021,7 +1022,7 @@ void prepareTxData(void){
     
     //Prepare the motor position as a percentage
     
-    float Pos = 100*((float)system.position/STORING_DONE_POS);
+    Pos = 100*( ((float)system.position)/STORING_DONE_POS);
     txBuffer[7] = (uint8_t)Pos&0xFF;
     
     int16_t SpeedSend= __builtin_mulss(REVERSE,__builtin_divsd(mcappData.SpeedHall,NOPOLESPAIRS));
