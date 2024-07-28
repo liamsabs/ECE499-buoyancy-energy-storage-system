@@ -1,5 +1,6 @@
 from tkinter import *
 from tkinter import ttk
+import time
 
 RECIEVED_DATA_LENGTH = 10
 
@@ -23,6 +24,9 @@ class BESS_control_panel:
 
     def __init__(self):
 
+        self.last_update_time = 0
+        self.this_update_time = 0
+
         self.window_width = 775
 
         self.root = Tk()
@@ -38,6 +42,9 @@ class BESS_control_panel:
         self.prev_state = self.state
         self.is_load_on = IntVar()
         self.load_btn_update_flag = True
+
+        self.energy_generated = 0
+        self.energy_used = 0
 
         self.controls_fr = ttk.Frame(self.root, padding=(0, 0, 0, 0), relief='')
         self.display_fr = ttk.Frame(self.root, padding=(12, 12, 12, 12), relief='')
@@ -62,7 +69,7 @@ class BESS_control_panel:
         self.widget_disp_fr = ttk.Frame(self.display_fr, padding=(0, 0, 0, 0), borderwidth=0, relief="flat")
 
         widget_disp_height = 1
-        widget_disp_width = 20
+        widget_disp_width = 21
         widget_disp_pad = 5
 
         self.V_bus_fr = ttk.Frame(self.widget_disp_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', height=100)
@@ -96,6 +103,14 @@ class BESS_control_panel:
         self.speed_fr = ttk.Frame(self.widget_disp_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', height=100)
         self.speed_label = ttk.Label(self.speed_fr, padding=(0, 0, 0, 0), text="MOTOR SPEED (RPM):", justify='left', anchor='w', relief='')
         self.speed_display = Text(self.speed_fr, wrap='word', padx=widget_disp_pad, pady=widget_disp_pad, width=widget_disp_width, height=widget_disp_height)
+
+        self.energy_used_fr = ttk.Frame(self.widget_disp_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', height=100)
+        self.energy_used_label = ttk.Label(self.energy_used_fr, padding=(0, 0, 0, 0), text="ENERGY USED (J):", justify='left', anchor='w', relief='')
+        self.energy_used_display = Text(self.energy_used_fr, wrap='word', padx=widget_disp_pad, pady=widget_disp_pad, width=widget_disp_width, height=widget_disp_height)
+
+        self.energy_generated_fr = ttk.Frame(self.widget_disp_fr, padding=(8, 8, 8, 8), borderwidth=2, relief='sunken', height=100)
+        self.energy_generated_label = ttk.Label(self.energy_generated_fr, padding=(0, 0, 0, 0), text="ENERGY GENERATED (J):", justify='left', anchor='w', relief='')
+        self.energy_generated_display = Text(self.energy_generated_fr, wrap='word', padx=widget_disp_pad, pady=widget_disp_pad, width=widget_disp_width, height=widget_disp_height)
 
         # GRID
 
@@ -165,6 +180,16 @@ class BESS_control_panel:
         self.speed_label.grid(column=0, row=0, sticky=(W))
         self.speed_display.grid(column=0, row=1, sticky=(W, N, E, S))
         #self.speed_fr.rowconfigure(1, weight=1)
+
+        self.energy_used_fr.grid(column=0, row=8, sticky=(W, N))
+        self.energy_used_label.grid(column=0, row=0, sticky=(W))
+        self.energy_used_display.grid(column=0, row=1, sticky=(W, N, E, S))
+        #self.energy_used_fr.rowconfigure(1, weight=1)
+
+        self.energy_generated_fr.grid(column=0, row=9, sticky=(W, N))
+        self.energy_generated_label.grid(column=0, row=0, sticky=(W))
+        self.energy_generated_display.grid(column=0, row=1, sticky=(W, N, E, S))
+        #self.energy_generated_fr.rowconfigure(1, weight=1)
 
         self.data_disp_fr.columnconfigure(0, weight=1)
         self.data_disp_fr.rowconfigure(1, weight=1)
@@ -240,6 +265,17 @@ class BESS_control_panel:
         depth = values[8]
         speed_rpm = twos_complement( (values[9] << 8) | values[10] , 16 )
 
+        if self.last_update_time != 0:
+            self.this_update_time = time.time_ns()
+            time_since_last_ns = self.this_update_time - self.last_update_time
+            energy = motor_power * time_since_last_ns / 1000000000
+            if state_value_recieved == GENERATE_STATE:
+                self.energy_generated += energy
+            elif state_value_recieved == STORING_STATE:
+                self.energy_used += energy
+        else:
+            self.last_update_time = time.time_ns()
+
         # display values to designated text boxes
         self.V_bus_display.delete(1.0, END)
         self.W_bus_display.delete(1.0, END)
@@ -249,6 +285,8 @@ class BESS_control_panel:
         self.state_display.delete(1.0, END)
         self.depth_display.delete(1.0, END)
         self.speed_display.delete(1.0, END)
+        self.energy_used_display.delete(1.0, END)
+        self.energy_generated_display.delete(1.0, END)
 
         self.V_bus_display.insert("end", "{:2.2f}".format(bus_voltage))
         self.W_bus_display.insert("end", "{:2.2f}".format(motor_power))
@@ -260,6 +298,8 @@ class BESS_control_panel:
         self.state_display.insert("end", str(self.state))
         self.depth_display.insert("end", str(depth))
         self.speed_display.insert("end", str(speed_rpm))
+        self.energy_used_display.insert("end", str(self.energy_used))
+        self.energy_generated_display.insert("end", str(self.energy_generated))
 
         #print("updated display")
         #self.root.after(1000, self.update_display)
