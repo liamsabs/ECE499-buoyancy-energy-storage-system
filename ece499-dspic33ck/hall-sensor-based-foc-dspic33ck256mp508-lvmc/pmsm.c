@@ -33,7 +33,7 @@
 *
 *******************************************************************************/
 
-#define NOMECH
+//#define NOMECH
 #include <xc.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -196,10 +196,6 @@ int main ( void )
             //LATEbits.LATE1=1;
            if(SPIFlag){
                 SPIFlag=0;
-                if(uGF.bits.MotorState==0b11){
-                    //Find the offset of the Ibus
-                    measureInputs.current.offsetIbusext=__builtin_divsd(measureInputs.current.sumIbusext,ISRCounter);
-                }
                 prepareTxData(); //acquire sensor and system state data
                 ISRCounter=0;
                 SPITrigger = 1; //set PORTE1 high (MicroBus_A_AN)
@@ -992,9 +988,20 @@ void prepareTxData(void){
     //load bus voltage into transmit buffer
     txBuffer[0] = (uint8_t)(measureInputs.dcBusVoltage  >> 8)&0xFF;
     txBuffer[1] = (uint8_t)(measureInputs.dcBusVoltage&0xFF);
+    
+    //Calculate bus current offsets if we're stopped
+    if(uGF.bits.MotorState==0b11){
+        //Find the offset of the Ibus
+        measureInputs.current.offsetIbusext=__builtin_divsd(measureInputs.current.sumIbusext,ISRCounter);
+        //Calculate battery offset voltage only on startup
+        if(FirstTime ==1){
+            measureInputs.current.offsetIbat=__builtin_divsd(measureInputs.current.sumIbat,ISRCounter);
+            FirstTime=0;
+        }
+    }
         
     //load bus current into transmit buffer, this is an averaging of all the currents measured, negative cause current sensor is backwards
-    IbusSend=__builtin_divsd(measureInputs.current.sumIbusext,ISRCounter)-measureInputs.current.offsetIbusext;
+    IbusSend=(__builtin_divsd(measureInputs.current.sumIbusext,ISRCounter)-measureInputs.current.offsetIbusext);
     IbatSend= -(__builtin_divsd(measureInputs.current.sumIbat,ISRCounter)-BAT_ADC_OFFSET);
     //Reset the current sums
     measureInputs.current.sumIbusext=0;
