@@ -273,6 +273,7 @@ class BESS_control_panel:
                 self.energy_generated += energy
             elif state_value_recieved == STORING_STATE:
                 self.energy_used += energy
+            self.last_update_time = self.this_update_time
         else:
             self.last_update_time = time.time_ns()
 
