@@ -327,5 +327,7 @@ class BESS_control_panel:
             self.debug_disp_obj.insert("end", "load disabled\n")
         self.debug_disp_obj.see("end")
 
+# TEST CODE, UNCOMMENT TO RUN THE DASHBOARD WITHOUT COMMS
+
 #cntrl = BESS_control_panel()
 #cntrl.begin()
