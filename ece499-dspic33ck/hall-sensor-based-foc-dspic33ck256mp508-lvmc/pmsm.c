@@ -375,10 +375,10 @@ void DoControl( void )
         /* PI control for Q */
         /* Speed reference */
         if(uGF.bits.MotorState==0b01){
-            ctrlParm.qVelRef = Q_CURRENT_REF_OPENLOOP;
+            ctrlParm.qVelRef = -Q_CURRENT_REF_OPENLOOP;
         }
         else if(uGF.bits.MotorState==0b10){
-           ctrlParm.qVelRef = -Q_CURRENT_REF_OPENLOOP;
+           ctrlParm.qVelRef = Q_CURRENT_REF_OPENLOOP;
         }
         
         /* q current reference is equal to the velocity reference 
@@ -685,18 +685,18 @@ void __attribute__((__interrupt__,no_auto_psv)) _ADCInterrupt()
         
         //If it's in reverse make sure the speed and the phase inc reflect that
         if(uGF.bits.MotorState==0b01){
-            mcappData.phaseInc = __builtin_divud((uint32_t)PHASE_INC_MULTI,
-                                        (unsigned int)(mcappData.periodFilter));
-
-            mcappData.SpeedHall = __builtin_divud((uint32_t)SPEED_MULTI, 
-                                        (unsigned int)(mcappData.periodFilter));
-        }
-        //Otherwise it's not backwards so we good
-        else if (uGF.bits.MotorState==0b10){
             mcappData.phaseInc = -(int)__builtin_divud((uint32_t)PHASE_INC_MULTI,
                                         (unsigned int)(mcappData.periodFilter));
 
             mcappData.SpeedHall = -(int)__builtin_divud((uint32_t)SPEED_MULTI, 
+                                        (unsigned int)(mcappData.periodFilter));
+        }
+        //Otherwise it's not backwards so we good
+        else if (uGF.bits.MotorState==0b10){
+            mcappData.phaseInc = (int)__builtin_divud((uint32_t)PHASE_INC_MULTI,
+                                        (unsigned int)(mcappData.periodFilter));
+
+            mcappData.SpeedHall = (int)__builtin_divud((uint32_t)SPEED_MULTI, 
                                         (unsigned int)(mcappData.periodFilter));
         }
         /* if open loop */
@@ -1020,7 +1020,7 @@ void prepareTxData(void){
     float Pos = 100*((float)system.position/STORING_DONE_POS);
     txBuffer[7] = (uint8_t)Pos&0xFF;
     
-    int16_t SpeedSend= __builtin_divsd(mcappData.SpeedHall,NOPOLESPAIRS);
+    int16_t SpeedSend= -__builtin_divsd(mcappData.SpeedHall,NOPOLESPAIRS);
     txBuffer[8] = (SpeedSend>>8)&0xFF;
     txBuffer[9] = (SpeedSend)&0xFF;
 }
@@ -1062,12 +1062,12 @@ void CalculateParkAngle(void)
         /* Then ramp up till the end speed */
         else if (motorStartUpData.startupRamp < END_SPEED_RPM && uGF.bits.MotorState==0b01)
         {
-            motorStartUpData.startupRamp += OPENLOOP_RAMPSPEED_INCREASERATE;
+            motorStartUpData.startupRamp -= OPENLOOP_RAMPSPEED_INCREASERATE;
         }
         /* Switch to closed loop */
         else if (motorStartUpData.startupRamp < -END_SPEED_RPM && uGF.bits.MotorState==0b10)
         {
-            motorStartUpData.startupRamp -= OPENLOOP_RAMPSPEED_INCREASERATE;
+            motorStartUpData.startupRamp += OPENLOOP_RAMPSPEED_INCREASERATE;
         }
         
         else 
