@@ -370,9 +370,9 @@ void DoControl( void )
         limit vq maximum to the one resulting from the calculation above */
         temp_qref_pow_q15 = (int16_t)(__builtin_mulss(piOutputId.out ,
                                                       piOutputId.out) >> 15);
-        temp_qref_pow_q15 = REVERSE*(Q15(MAX_VOLTAGE_VECTOR) - temp_qref_pow_q15);
+        temp_qref_pow_q15 = (Q15(MAX_VOLTAGE_VECTOR) - temp_qref_pow_q15);
         piInputIq.piState.outMax = (_Q15sqrt (temp_qref_pow_q15));
-        piInputIq.piState.outMin = REVERSE*(- piInputIq.piState.outMax);    
+        piInputIq.piState.outMin = (- piInputIq.piState.outMax);    
         /* PI control for Q */
         /* Speed reference */
         if(uGF.bits.MotorState==0b01){
